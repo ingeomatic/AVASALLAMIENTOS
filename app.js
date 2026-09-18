@@ -623,82 +623,111 @@ DASHBOARD.renderPrioridadAlta(casos);
 },
 
 renderGraficos(casos) {
-    const total = casos.length || 1;
 
-    // 1. ESTADO ACTUAL
-    // ESTE GRÁFICO NO SE MODIFICA
-    const ordenEstados = [
-      "CON INSPECCION- PENDIENTE DE EMISION DE MEDIDAS PRECAUTORIAS",
-      "CON MEDIDAS PRECAUTORIAS",
-      "CON INTIMACION",
-      "CON CARTA AL COMANDO",
-      "POR DEFINIR",
-      "DESALOJADO",
-      "DENUNCIA DE AVASALLAMIENTO DESESTIMADA",
-      "SE PROSIGUIO CON EL TRAMITE DE DOTACION"
-    ];
+  const total = casos.length || 1;
 
-    const concluidos = [
-      "DESALOJADO",
-      "DENUNCIA DE AVASALLAMIENTO DESESTIMADA",
-      "SE PROSIGUIO CON EL TRAMITE DE DOTACION"
-    ];
 
-    const mapEstados = {};
+  // ============================================================
+  // 1. CASOS POR ESTADO ACTUAL
+  // ESTE GRÁFICO SE MANTIENE SIN CAMBIOS
+  // ============================================================
 
-    ordenEstados.forEach(e => {
-      mapEstados[e] = 0;
-    });
+  const ordenEstados = [
+    "CON INSPECCION- PENDIENTE DE EMISION DE MEDIDAS PRECAUTORIAS",
+    "CON MEDIDAS PRECAUTORIAS",
+    "CON INTIMACION",
+    "CON CARTA AL COMANDO",
+    "POR DEFINIR",
+    "DESALOJADO",
+    "DENUNCIA DE AVASALLAMIENTO DESESTIMADA",
+    "SE PROSIGUIO CON EL TRAMITE DE DOTACION"
+  ];
 
-    casos.forEach(c => {
-      const ea = (c.estado_actual || "").trim();
+  const concluidos = [
+    "DESALOJADO",
+    "DENUNCIA DE AVASALLAMIENTO DESESTIMADA",
+    "SE PROSIGUIO CON EL TRAMITE DE DOTACION"
+  ];
 
-      if (!ea) return;
+  const mapEstados = {};
 
-      if (mapEstados[ea] !== undefined) {
-        mapEstados[ea]++;
-      } else {
-        mapEstados[ea] = (mapEstados[ea] || 0) + 1;
-      }
-    });
+  ordenEstados.forEach(e => {
+    mapEstados[e] = 0;
+  });
 
-    const maxVal = Math.max(...Object.values(mapEstados), 1);
+  casos.forEach(c => {
 
-    const containerEstados = UTIL.qs("#dashboard-estados-barras");
+    const ea = (c.estado_actual || "").trim();
 
-    if (containerEstados) {
-      containerEstados.innerHTML = Object.entries(mapEstados)
+    if (!ea) return;
+
+    if (mapEstados[ea] !== undefined) {
+      mapEstados[ea]++;
+    } else {
+      mapEstados[ea] =
+        (mapEstados[ea] || 0) + 1;
+    }
+
+  });
+
+  const maxVal = Math.max(
+    ...Object.values(mapEstados),
+    1
+  );
+
+  const containerEstados =
+    UTIL.qs("#dashboard-estados-barras");
+
+  if (containerEstados) {
+
+    containerEstados.innerHTML =
+      Object.entries(mapEstados)
         .map(([nombre, cant]) => {
 
-          const esConcluido = concluidos.includes(nombre);
+          const esConcluido =
+            concluidos.includes(nombre);
 
-          const colorBarra = esConcluido
-            ? "bg-slate-700"
-            : "bg-emerald-600";
+          const colorBarra =
+            esConcluido
+              ? "bg-slate-700"
+              : "bg-emerald-600";
 
-          const colorTexto = cant > 0
-            ? "text-slate-900"
-            : "text-slate-400";
+          const colorTexto =
+            cant > 0
+              ? "text-slate-900"
+              : "text-slate-400";
 
-          const pct = ((cant / maxVal) * 100).toFixed(1);
+          const pct =
+            ((cant / maxVal) * 100)
+              .toFixed(1);
 
-          const tag = esConcluido
-            ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">CONCLUIDO</span>`
-            : `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">EN CURSO</span>`;
+          const tag =
+            esConcluido
+
+              ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                   CONCLUIDO
+                 </span>`
+
+              : `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                   EN CURSO
+                 </span>`;
 
           return `
             <div
               class="space-y-1 cursor-pointer group hover:bg-slate-50 p-2 rounded-lg transition-colors border border-transparent hover:border-slate-200"
               data-estado-click="${nombre}"
             >
+
               <div class="flex items-center justify-between text-xs gap-2">
 
                 <div class="flex items-center gap-2 truncate">
+
                   ${tag}
 
                   <span class="font-semibold text-slate-800 uppercase group-hover:text-[#0f392b] transition-colors truncate">
                     ${nombre}
                   </span>
+
                 </div>
 
                 <span class="font-bold ${colorTexto} tabular-nums text-xs">
@@ -708,518 +737,614 @@ renderGraficos(casos) {
               </div>
 
               <div class="w-full bg-slate-100 rounded h-3 overflow-hidden">
+
                 <div
                   class="${colorBarra} h-full rounded transition-all duration-300"
                   style="width: ${pct}%"
                 ></div>
+
               </div>
 
             </div>
           `;
+
         })
         .join("");
 
-      UTIL.qsa(
-        "[data-estado-click]",
-        containerEstados
-      ).forEach(el => {
 
-        el.onclick = () => {
-          ROUTER.irAListadoConFiltro(
+    UTIL.qsa(
+      "[data-estado-click]",
+      containerEstados
+    ).forEach(el => {
+
+      el.onclick = () => {
+
+        ROUTER.irAListadoConFiltro(
+          {
+            estado_actual:
+              el.dataset.estadoClick
+          },
+          el.dataset.estadoClick
+        );
+
+      };
+
+    });
+
+  }
+
+
+  // ============================================================
+  // 2. DATOS DE CLASIFICACIÓN
+  // ============================================================
+
+  const mapClasif = {};
+
+  casos.forEach(c => {
+
+    const cl =
+      c.clasificacion_caso ||
+      "Sin Clasificación";
+
+    mapClasif[cl] =
+      (mapClasif[cl] || 0) + 1;
+
+  });
+
+
+  // ============================================================
+  // 3. DATOS DE DEPARTAMENTO
+  // ============================================================
+
+  const mapDepto = {};
+
+  casos.forEach(c => {
+
+    const dp =
+      c.departamento ||
+      "Sin dato";
+
+    mapDepto[dp] =
+      (mapDepto[dp] || 0) + 1;
+
+  });
+
+
+  // ============================================================
+  // FUNCIÓN GENERAL PARA CREAR TORTAS
+  // ============================================================
+
+  const crearTorta = (
+    canvasId,
+    chartKey,
+    labels,
+    valores
+  ) => {
+
+    if (!canvasId) return;
+
+    if (!STATE.charts) {
+      STATE.charts = {};
+    }
+
+    if (STATE.charts[chartKey]) {
+
+      STATE.charts[chartKey].destroy();
+
+      STATE.charts[chartKey] = null;
+
+    }
+
+    const canvas =
+      UTIL.qs(`#${canvasId}`);
+
+    if (
+      !canvas ||
+      typeof Chart === "undefined"
+    ) {
+      return;
+    }
+
+    const colores = [
+      "#0f392b",
+      "#166534",
+      "#15803d",
+      "#16a34a",
+      "#22c55e",
+      "#4ade80",
+      "#65a30d",
+      "#ca8a04",
+      "#ea580c",
+      "#dc2626",
+      "#9333ea",
+      "#2563eb"
+    ];
+
+    STATE.charts[chartKey] =
+      new Chart(canvas, {
+
+        type: "pie",
+
+        data: {
+
+          labels: labels,
+
+          datasets: [
+
             {
-              estado_actual: el.dataset.estadoClick
+
+              data: valores,
+
+              backgroundColor:
+                labels.map(
+                  (_, index) =>
+                    colores[
+                      index %
+                      colores.length
+                    ]
+                ),
+
+              borderColor: "#ffffff",
+
+              borderWidth: 2,
+
+              hoverOffset: 8
+
+            }
+
+          ]
+
+        },
+
+        options: {
+
+          responsive: true,
+
+          maintainAspectRatio: false,
+
+          plugins: {
+
+            legend: {
+
+              position: "bottom",
+
+              labels: {
+
+                usePointStyle: true,
+
+                pointStyle: "circle",
+
+                padding: 12,
+
+                font: {
+                  size: 10
+                }
+
+              }
+
             },
-            el.dataset.estadoClick
-          );
-        };
+
+            tooltip: {
+
+              callbacks: {
+
+                label: function(context) {
+
+                  const totalGrafico =
+                    context.dataset.data.reduce(
+                      (sum, value) =>
+                        sum + Number(value),
+                      0
+                    );
+
+                  const valor =
+                    Number(context.raw);
+
+                  const porcentaje =
+                    totalGrafico
+                      ? (
+                          (valor /
+                            totalGrafico) *
+                          100
+                        ).toFixed(1)
+                      : 0;
+
+                  return `${context.label}: ${valor} (${porcentaje}%)`;
+
+                }
+
+              }
+
+            }
+
+          }
+
+        }
 
       });
-    }
+
+  };
 
 
-    // ============================================================
-    // 2. CASOS POR CLASIFICACIÓN
-    // CAMBIO SOLICITADO:
-    // GRÁFICO DE BARRAS -> GRÁFICO DE TORTA CIRCULAR
-    // ============================================================
+  // ============================================================
+  // 4. FUNCIÓN GENERAL PARA HISTOGRAMAS HORIZONTALES
+  // ============================================================
 
-    const mapClasif = {};
+  const crearHistogramaHorizontal = (
+    container,
+    datos,
+    filtroKey,
+    tipo
+  ) => {
 
-    casos.forEach(c => {
+    if (!container) return;
 
-      const cl = c.clasificacion_caso || "Sin Clasificación";
-
-      mapClasif[cl] = (mapClasif[cl] || 0) + 1;
-
-    });
-
-    const containerClasif = UTIL.qs(
-      "#dashboard-clasificacion-widget"
-    );
-
-    if (containerClasif) {
-
-      // Destruir gráfico anterior si existe
-      if (STATE.charts.dashboardClasificacion) {
-        STATE.charts.dashboardClasificacion.destroy();
-        STATE.charts.dashboardClasificacion = null;
-      }
-
-      const labelsClasif = Object.keys(mapClasif);
-
-      const valoresClasif = Object.values(mapClasif);
-
-      // Limpiar el contenedor
-      containerClasif.innerHTML = `
-        <div class="relative w-full h-64 sm:h-72">
-          <canvas id="dashboard-clasificacion-chart"></canvas>
-        </div>
-      `;
-
-      const canvasClasif = UTIL.qs(
-        "#dashboard-clasificacion-chart",
-        containerClasif
-      );
-
-      if (canvasClasif && typeof Chart !== "undefined") {
-
-        const coloresClasif = [
-          "#0f392b",
-          "#166534",
-          "#15803d",
-          "#16a34a",
-          "#22c55e",
-          "#4ade80",
-          "#65a30d",
-          "#ca8a04",
-          "#ea580c",
-          "#dc2626",
-          "#9333ea",
-          "#2563eb"
-        ];
-
-        STATE.charts.dashboardClasificacion = new Chart(
-          canvasClasif,
-          {
-            type: "pie",
-
-            data: {
-              labels: labelsClasif,
-
-              datasets: [
-                {
-                  data: valoresClasif,
-
-                  backgroundColor: labelsClasif.map(
-                    (_, index) =>
-                      coloresClasif[
-                        index % coloresClasif.length
-                      ]
-                  ),
-
-                  borderColor: "#ffffff",
-
-                  borderWidth: 2,
-
-                  hoverOffset: 8
-                }
-              ]
-            },
-
-            options: {
-
-              responsive: true,
-
-              maintainAspectRatio: false,
-
-              plugins: {
-
-                legend: {
-                  position: "bottom",
-
-                  labels: {
-                    usePointStyle: true,
-
-                    pointStyle: "circle",
-
-                    padding: 15,
-
-                    font: {
-                      size: 11
-                    }
-                  }
-                },
-
-                tooltip: {
-
-                  callbacks: {
-
-                    label: function(context) {
-
-                      const totalClasif =
-                        context.dataset.data.reduce(
-                          (sum, value) =>
-                            sum + Number(value),
-                          0
-                        );
-
-                      const valor =
-                        Number(context.raw);
-
-                      const porcentaje =
-                        totalClasif
-                          ? (
-                              (valor /
-                                totalClasif) *
-                              100
-                            ).toFixed(1)
-                          : 0;
-
-                      return `${context.label}: ${valor} (${porcentaje}%)`;
-                    }
-
-                  }
-
-                }
-
-              },
-
-              onClick: function(event, elements) {
-
-                if (!elements.length) return;
-
-                const indice =
-                  elements[0].index;
-
-                const etiqueta =
-                  labelsClasif[indice];
-
-                ROUTER.irAListadoConFiltro(
-                  {
-                    clasificacion: etiqueta
-                  },
-                  etiqueta
-                );
-
-              }
-
-            }
-
-          }
+    const entradas =
+      Object.entries(datos)
+        .sort(
+          (a, b) => b[1] - a[1]
         );
 
-      } else {
-
-        containerClasif.innerHTML = `
-          <div class="flex items-center justify-center h-64 text-sm text-slate-500">
-            No se pudo cargar el gráfico.
-          </div>
-        `;
-
-      }
-
-    }
-
-
-    // ============================================================
-    // 3. TOTAL DE CASOS POR DEPARTAMENTO
-    // CAMBIO SOLICITADO:
-    // GRÁFICO DE BARRAS -> GRÁFICO DE TORTA CIRCULAR
-    // ============================================================
-
-    const mapDepto = {};
-
-    casos.forEach(c => {
-
-      const dp = c.departamento || "Sin dato";
-
-      mapDepto[dp] = (mapDepto[dp] || 0) + 1;
-
-    });
-
-    const deptosOrdenados = Object.entries(
-      mapDepto
-    ).sort(
-      (a, b) => b[1] - a[1]
-    );
-
-    const containerDepto = UTIL.qs(
-      "#dashboard-departamento-widget"
-    );
-
-    if (containerDepto) {
-
-      // Destruir gráfico anterior si existe
-      if (STATE.charts.dashboardDepartamento) {
-        STATE.charts.dashboardDepartamento.destroy();
-        STATE.charts.dashboardDepartamento = null;
-      }
-
-      const labelsDepto = deptosOrdenados.map(
-        ([nombre]) => nombre
-      );
-
-      const valoresDepto = deptosOrdenados.map(
-        ([, cantidad]) => cantidad
-      );
-
-      // Limpiar el contenedor
-      containerDepto.innerHTML = `
-        <div class="relative w-full h-64 sm:h-72">
-          <canvas id="dashboard-departamento-chart"></canvas>
-        </div>
-      `;
-
-      const canvasDepto = UTIL.qs(
-        "#dashboard-departamento-chart",
-        containerDepto
-      );
-
-      if (canvasDepto && typeof Chart !== "undefined") {
-
-        const coloresDepto = [
-          "#0f392b",
-          "#166534",
-          "#15803d",
-          "#16a34a",
-          "#22c55e",
-          "#4ade80",
-          "#65a30d",
-          "#ca8a04",
-          "#ea580c",
-          "#dc2626",
-          "#9333ea",
-          "#2563eb"
-        ];
-
-        STATE.charts.dashboardDepartamento = new Chart(
-          canvasDepto,
-          {
-            type: "pie",
-
-            data: {
-              labels: labelsDepto,
-
-              datasets: [
-                {
-                  data: valoresDepto,
-
-                  backgroundColor: labelsDepto.map(
-                    (_, index) =>
-                      coloresDepto[
-                        index % coloresDepto.length
-                      ]
-                  ),
-
-                  borderColor: "#ffffff",
-
-                  borderWidth: 2,
-
-                  hoverOffset: 8
-                }
-              ]
-            },
-
-            options: {
-
-              responsive: true,
-
-              maintainAspectRatio: false,
-
-              plugins: {
-
-                legend: {
-                  position: "bottom",
-
-                  labels: {
-                    usePointStyle: true,
-
-                    pointStyle: "circle",
-
-                    padding: 15,
-
-                    font: {
-                      size: 11
-                    }
-                  }
-                },
-
-                tooltip: {
-
-                  callbacks: {
-
-                    label: function(context) {
-
-                      const totalDepto =
-                        context.dataset.data.reduce(
-                          (sum, value) =>
-                            sum + Number(value),
-                          0
-                        );
-
-                      const valor =
-                        Number(context.raw);
-
-                      const porcentaje =
-                        totalDepto
-                          ? (
-                              (valor /
-                                totalDepto) *
-                              100
-                            ).toFixed(1)
-                          : 0;
-
-                      return `${context.label}: ${valor} (${porcentaje}%)`;
-                    }
-
-                  }
-
-                }
-
-              },
-
-              onClick: function(event, elements) {
-
-                if (!elements.length) return;
-
-                const indice =
-                  elements[0].index;
-
-                const etiqueta =
-                  labelsDepto[indice];
-
-                ROUTER.irAListadoConFiltro(
-                  {
-                    departamento: etiqueta
-                  },
-                  etiqueta
-                );
-
-              }
-
-            }
-
-          }
-        );
-
-      } else {
-
-        containerDepto.innerHTML = `
-          <div class="flex items-center justify-center h-64 text-sm text-slate-500">
-            No se pudo cargar el gráfico.
-          </div>
-        `;
-
-      }
-
-
-      // Mantener el texto inferior existente
-      const topDepto =
-        deptosOrdenados[0];
-
-      const footerDepto = UTIL.qs(
-        "#dashboard-depto-footer"
-      );
-
-      if (footerDepto && topDepto) {
-
-        const pctTop =
-          (
-            (topDepto[1] / total) *
-            100
-          ).toFixed(0);
-
-        footerDepto.textContent =
-          `${topDepto[0]} concentra el ${pctTop}% de las causas registradas`;
-
-      }
-
-    }
-
-
-    // ============================================================
-    // 4. GESTIÓN
-    // ESTE GRÁFICO NO SE MODIFICA
-    // ============================================================
-
-    const mapGestion = {};
-
-    casos.forEach(c => {
-
-      const g =
-        c.gestion ||
-        (
-          c.fecha_ingreso
-            ? c.fecha_ingreso.slice(0, 4)
-            : "Sin año"
-        );
-
-      mapGestion[g] =
-        (mapGestion[g] || 0) + 1;
-
-    });
-
-    const gestiones =
-      Object.keys(mapGestion).sort();
-
-    const maxGestion =
+    const maximo =
       Math.max(
-        ...Object.values(mapGestion),
+        ...entradas.map(
+          ([, cantidad]) => cantidad
+        ),
         1
       );
 
-    const containerGestion = UTIL.qs(
+    if (!entradas.length) {
+
+      container.innerHTML = `
+        <div class="flex items-center justify-center h-64 text-sm text-slate-400">
+          No existen datos disponibles.
+        </div>
+      `;
+
+      return;
+    }
+
+
+    container.innerHTML =
+      entradas
+        .map(
+          ([nombre, cantidad]) => {
+
+            const porcentaje =
+              (
+                (cantidad /
+                  maximo) *
+                100
+              ).toFixed(1);
+
+            const porcentajeTotal =
+              (
+                (cantidad /
+                  total) *
+                100
+              ).toFixed(1);
+
+            const atributo =
+              tipo === "departamento"
+                ? "data-depto-hist-click"
+                : "data-clasif-hist-click";
+
+            return `
+              <div
+                class="group cursor-pointer p-1.5 rounded-lg hover:bg-slate-50 transition-colors"
+                ${atributo}="${nombre}"
+              >
+
+                <div class="flex items-center gap-3">
+
+                  <div
+                    class="w-32 sm:w-40 shrink-0 text-right text-[11px] font-semibold text-slate-700 truncate"
+                    title="${nombre}"
+                  >
+                    ${nombre}
+                  </div>
+
+                  <div class="flex-1">
+
+                    <div class="h-6 bg-slate-100 rounded-md overflow-hidden">
+
+                      <div
+                        class="h-full bg-[#0f392b] rounded-md transition-all duration-300 group-hover:bg-emerald-700"
+                        style="width: ${porcentaje}%"
+                      ></div>
+
+                    </div>
+
+                  </div>
+
+                  <div class="w-20 shrink-0 text-left">
+
+                    <span class="text-xs font-bold text-slate-900">
+                      ${cantidad}
+                    </span>
+
+                    <span class="text-[10px] text-slate-400 ml-1">
+                      (${porcentajeTotal}%)
+                    </span>
+
+                  </div>
+
+                </div>
+
+              </div>
+            `;
+
+          }
+        )
+        .join("");
+
+
+    const selector =
+      tipo === "departamento"
+        ? "[data-depto-hist-click]"
+        : "[data-clasif-hist-click]";
+
+
+    UTIL.qsa(
+      selector,
+      container
+    ).forEach(el => {
+
+      el.onclick = () => {
+
+        const valor =
+          tipo === "departamento"
+            ? el.dataset.deptoHistClick
+            : el.dataset.clasifHistClick;
+
+        ROUTER.irAListadoConFiltro(
+          {
+            [filtroKey]: valor
+          },
+          valor
+        );
+
+      };
+
+    });
+
+  };
+
+
+  // ============================================================
+  // 5. DEPARTAMENTO - HISTOGRAMA
+  // ============================================================
+
+  crearHistogramaHorizontal(
+    UTIL.qs(
+      "#dashboard-departamento-histograma"
+    ),
+    mapDepto,
+    "departamento",
+    "departamento"
+  );
+
+
+  // ============================================================
+  // 6. DEPARTAMENTO - TORTA
+  // ============================================================
+
+  const deptosOrdenados =
+    Object.entries(mapDepto)
+      .sort(
+        (a, b) => b[1] - a[1]
+      );
+
+  const labelsDepto =
+    deptosOrdenados.map(
+      ([nombre]) => nombre
+    );
+
+  const valoresDepto =
+    deptosOrdenados.map(
+      ([, cantidad]) => cantidad
+    );
+
+  const deptoPieContainer =
+    UTIL.qs(
+      "#dashboard-departamento-pie"
+    );
+
+  if (deptoPieContainer) {
+
+    deptoPieContainer.innerHTML = `
+      <div class="relative w-full h-80">
+        <canvas id="dashboard-departamento-pie-chart"></canvas>
+      </div>
+    `;
+
+    crearTorta(
+      "dashboard-departamento-pie-chart",
+      "dashboardDepartamento",
+      labelsDepto,
+      valoresDepto
+    );
+
+  }
+
+
+  // Pie footer departamento
+
+  const topDepto =
+    deptosOrdenados[0];
+
+  const footerDepto =
+    UTIL.qs(
+      "#dashboard-depto-footer"
+    );
+
+  if (
+    footerDepto &&
+    topDepto
+  ) {
+
+    const pctTop =
+      (
+        (topDepto[1] /
+          total) *
+        100
+      ).toFixed(0);
+
+    footerDepto.textContent =
+      `${topDepto[0]} concentra el ${pctTop}% de las causas registradas`;
+
+  }
+
+
+  // ============================================================
+  // 7. CLASIFICACIÓN - HISTOGRAMA
+  // ============================================================
+
+  crearHistogramaHorizontal(
+    UTIL.qs(
+      "#dashboard-clasificacion-histograma"
+    ),
+    mapClasif,
+    "clasificacion",
+    "clasificacion"
+  );
+
+
+  // ============================================================
+  // 8. CLASIFICACIÓN - TORTA
+  // ============================================================
+
+  const clasificacionesOrdenadas =
+    Object.entries(mapClasif)
+      .sort(
+        (a, b) => b[1] - a[1]
+      );
+
+  const labelsClasif =
+    clasificacionesOrdenadas.map(
+      ([nombre]) => nombre
+    );
+
+  const valoresClasif =
+    clasificacionesOrdenadas.map(
+      ([, cantidad]) => cantidad
+    );
+
+  const clasifPieContainer =
+    UTIL.qs(
+      "#dashboard-clasificacion-pie"
+    );
+
+  if (clasifPieContainer) {
+
+    clasifPieContainer.innerHTML = `
+      <div class="relative w-full h-80">
+        <canvas id="dashboard-clasificacion-pie-chart"></canvas>
+      </div>
+    `;
+
+    crearTorta(
+      "dashboard-clasificacion-pie-chart",
+      "dashboardClasificacion",
+      labelsClasif,
+      valoresClasif
+    );
+
+  }
+
+
+  // ============================================================
+  // 9. GESTIÓN
+  // ESTE GRÁFICO SE MANTIENE SIN CAMBIOS
+  // ============================================================
+
+  const mapGestion = {};
+
+  casos.forEach(c => {
+
+    const g =
+      c.gestion ||
+      (
+        c.fecha_ingreso
+          ? c.fecha_ingreso.slice(0, 4)
+          : "Sin año"
+      );
+
+    mapGestion[g] =
+      (mapGestion[g] || 0) + 1;
+
+  });
+
+  const gestiones =
+    Object.keys(mapGestion)
+      .sort();
+
+  const maxGestion =
+    Math.max(
+      ...Object.values(mapGestion),
+      1
+    );
+
+  const containerGestion =
+    UTIL.qs(
       "#dashboard-gestion-widget"
     );
 
-    if (containerGestion) {
+  if (containerGestion) {
 
-      containerGestion.innerHTML = `
-        <div class="min-w-full pb-2">
+    containerGestion.innerHTML = `
+      <div class="min-w-full pb-2">
 
-          <div class="h-44 flex items-end gap-4 sm:gap-6 px-4 pt-6 border-b border-slate-200">
+        <div class="h-44 flex items-end gap-4 sm:gap-6 px-4 pt-6 border-b border-slate-200">
 
-            ${gestiones.map((g) => {
+          ${gestiones.map((g) => {
 
-              const cant =
-                mapGestion[g];
+            const cant =
+              mapGestion[g];
 
-              const pct =
-                Math.max(
-                  ((cant / maxGestion) * 100),
-                  10
-                ).toFixed(0);
+            const pct =
+              Math.max(
+                (
+                  (cant /
+                    maxGestion) *
+                  100
+                ),
+                10
+              ).toFixed(0);
 
-              const esMax =
-                cant === maxGestion;
+            const esMax =
+              cant === maxGestion;
 
-              const barBg =
-                esMax
-                  ? "bg-[#0f392b]"
-                  : "bg-emerald-700/70 hover:bg-[#0f392b]";
+            const barBg =
+              esMax
+                ? "bg-[#0f392b]"
+                : "bg-emerald-700/70 hover:bg-[#0f392b]";
 
-              const numColor =
-                esMax
-                  ? "text-[#0f392b] font-extrabold"
-                  : "text-slate-700 font-bold";
+            const numColor =
+              esMax
+                ? "text-[#0f392b] font-extrabold"
+                : "text-slate-700 font-bold";
 
-              return `
-                <div
-                  class="flex-1 min-w-[55px] max-w-[90px] flex flex-col items-center gap-2 h-full justify-end cursor-pointer group"
-                  data-gestion-click="${g}"
-                  title="Gestión ${g}: ${cant} casos"
+            return `
+              <div
+                class="flex-1 min-w-[55px] max-w-[90px] flex flex-col items-center gap-2 h-full justify-end cursor-pointer group"
+                data-gestion-click="${g}"
+                title="Gestión ${g}: ${cant} casos"
+              >
+
+                <span
+                  class="text-xs ${numColor} bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 shadow-2xs group-hover:scale-105 transition-transform"
                 >
+                  ${cant}
+                </span>
 
-                  <span class="text-xs ${numColor} bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 shadow-2xs group-hover:scale-105 transition-transform">
-                    ${cant}
-                  </span>
+                <div
+                  class="w-full ${barBg} rounded-t-md shadow-sm transition-all duration-300"
+                  style="height: ${pct}%"
+                ></div>
 
-                  <div
-                    class="w-full ${barBg} rounded-t-md shadow-sm transition-all duration-300"
-                    style="height: ${pct}%"
-                  ></div>
-
-                  <span class="text-xs ${
+                <span
+                  class="text-xs ${
                     esMax
                       ? "font-bold text-[#0f392b]"
                       : "font-medium text-slate-600"
@@ -1227,63 +1352,66 @@ renderGraficos(casos) {
                     esMax
                       ? "border-[#0f392b]"
                       : "border-transparent"
-                  } pt-1">
-                    ${g}
-                  </span>
+                  } pt-1"
+                >
+                  ${g}
+                </span>
 
-                </div>
-              `;
+              </div>
+            `;
 
-            }).join("")}
-
-          </div>
+          }).join("")}
 
         </div>
-      `;
+
+      </div>
+    `;
 
 
-      const topGestion =
-        Object.entries(mapGestion)
-          .sort(
-            (a, b) => b[1] - a[1]
-          )[0];
+    const topGestion =
+      Object.entries(mapGestion)
+        .sort(
+          (a, b) => b[1] - a[1]
+        )[0];
 
-      const footerGestion =
-        UTIL.qs(
-          "#dashboard-gestion-footer"
-        );
+    const footerGestion =
+      UTIL.qs(
+        "#dashboard-gestion-footer"
+      );
 
-      if (footerGestion && topGestion) {
+    if (
+      footerGestion &&
+      topGestion
+    ) {
 
-        footerGestion.textContent =
-          `Gestión ${topGestion[0]} concentra el mayor volumen anual con ${topGestion[1]} expedientes`;
-
-      }
-
-
-      UTIL.qsa(
-        "[data-gestion-click]",
-        containerGestion
-      ).forEach(el => {
-
-        el.onclick = () => {
-
-          ROUTER.irAListadoConFiltro(
-            {
-              gestion:
-                el.dataset.gestionClick
-            },
-            `Gestión ${el.dataset.gestionClick}`
-          );
-
-        };
-
-      });
+      footerGestion.textContent =
+        `Gestión ${topGestion[0]} concentra el mayor volumen anual con ${topGestion[1]} expedientes`;
 
     }
 
-  },
 
+    UTIL.qsa(
+      "[data-gestion-click]",
+      containerGestion
+    ).forEach(el => {
+
+      el.onclick = () => {
+
+        ROUTER.irAListadoConFiltro(
+          {
+            gestion:
+              el.dataset.gestionClick
+          },
+          `Gestión ${el.dataset.gestionClick}`
+        );
+
+      };
+
+    });
+
+  }
+
+},
 // Requerimiento 3: Implementación de Últimos Registros incluyendo el usuario creador
 renderUltimosRegistros(casos) {
 const cont = UTIL.qs("#dashboard-ultimos-registros");
