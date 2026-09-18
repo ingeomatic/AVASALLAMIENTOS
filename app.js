@@ -63,6 +63,7 @@ const CAMPOS_OPCIONALES = [
 const STATE = {
   user: null,
   perfil: null,
+  perfilesMap: {},        // id -> nombre_completo
   territorios: [],        // catálogo departamento/provincia/municipio
   casosCache: [],
   casoActual: null,       // caso cargado actualmente en detalle/formulario
@@ -141,6 +142,18 @@ const AUTH = {
     });
   },
 
+  async cargarPerfilesMap() {
+    try {
+      const { data, error } = await supa.from("perfiles").select("id, nombre_completo, rol");
+      if (!error && data) {
+        STATE.perfilesMap = {};
+        data.forEach(p => { STATE.perfilesMap[p.id] = p.nombre_completo; });
+      }
+    } catch (e) {
+      console.warn("No se pudo cargar perfilesMap:", e);
+    }
+  },
+
   async cargarSesion(session) {
     STATE.user = session.user;
     const { data: perfil, error } = await supa.from("perfiles").select("*").eq("id", session.user.id).single();
@@ -150,6 +163,7 @@ const AUTH = {
       return;
     }
     STATE.perfil = perfil;
+    await AUTH.cargarPerfilesMap();
     ROUTER.mostrarApp();
   },
 
@@ -243,6 +257,9 @@ const CASOS = {
     const { data, error } = await supa.from("casos").select("*").order("nro", { ascending: false });
     if (error) { UTIL.toast("No se pudieron cargar los casos.", "error"); return []; }
     STATE.casosCache = data || [];
+    if (!STATE.perfilesMap || Object.keys(STATE.perfilesMap).length === 0) {
+      await AUTH.cargarPerfilesMap();
+    }
     return STATE.casosCache;
   },
 
@@ -570,13 +587,17 @@ const ALERTAS = {
   },
 
   // Calcula el panel general de alertas sobre toda la cartera de casos.
-  // (Se dejó solo lo pedido: sin informe de atención, inspección pendiente,
-  // inspecciones realizadas sin informe, y casos sin medidas precautorias emitidas.)
+  // Requerimiento 8: "Con inspección pendiente" enfocado en casos con prioridad ALTA.
   resumenGeneral(casos) {
-    const activos = casos.filter(c => c.estado_global === "PROCESO EN CURSO");
+    const activos = casos.filter(c => (c.estado_global || "").trim().toUpperCase() !== "PROCESO CONCLUIDO");
 
     const sinInformeAtencion = activos.filter(c => UTIL.vacio(c.informe_atencion));
-    const inspeccionPendiente = activos.filter(c => c.corresponde_atender === "SI" && UTIL.vacio(c.fecha_programada_inspeccion) && UTIL.vacio(c.fecha_real_inspeccion));
+    const inspeccionPendiente = activos.filter(c => {
+      const p = (c.prioridad || "").trim().toUpperCase();
+      const ei = (c.estado_inspeccion || "").trim().toUpperCase();
+      const sinInsp = ei !== "INSPECCIONADO" || UTIL.vacio(c.fecha_real_inspeccion);
+      return p === "ALTA" && sinInsp;
+    });
     const realizadasSinInforme = activos.filter(c => !UTIL.vacio(c.fecha_real_inspeccion) && UTIL.vacio(c.fecha_informe));
     const sinMedidasPrecautorias = activos.filter(c => (c.accion_a_seguir === "EMITIR MEDIDAS PRECAUTORIAS" || c.accion_a_seguir === "MEDIDAS PRECAUTORIAS") && UTIL.vacio(c.res_medidas_precautorias));
 
@@ -628,29 +649,29 @@ const DASHBOARD = {
         </div>
       </div>
 
-      <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between cursor-pointer hover:border-[#0f392b] hover:shadow-md transition-all" data-f1="1">
+      <div class="bg-white rounded-xl border border-emerald-300 bg-emerald-50/20 p-6 shadow-sm flex flex-col justify-between cursor-pointer hover:border-emerald-500 hover:shadow-md transition-all" data-f1="1">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">PROCESOS EN CURSO</span>
-          <span class="p-2 rounded-lg bg-emerald-50 text-[#0f392b]">
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-800">PROCESOS EN CURSO</span>
+          <span class="p-2 rounded-lg bg-emerald-100 text-emerald-800">
             <span class="material-symbols-outlined text-[20px]">pending_actions</span>
           </span>
         </div>
         <div class="mt-4 flex items-baseline justify-between">
-          <div class="text-4xl font-extrabold text-[#0f392b] tracking-tight">${enCurso}</div>
-          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-50 text-[#0f392b]">${porcEnCurso}%</span>
+          <div class="text-4xl font-extrabold text-emerald-700 tracking-tight">${enCurso}</div>
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">${porcEnCurso}%</span>
         </div>
       </div>
 
-      <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between cursor-pointer hover:border-slate-400 hover:shadow-md transition-all" data-f1="2">
+      <div class="bg-white rounded-xl border border-slate-300 bg-slate-100/40 p-6 shadow-sm flex flex-col justify-between cursor-pointer hover:border-slate-500 hover:shadow-md transition-all" data-f1="2">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">PROCESOS CONCLUIDOS</span>
-          <span class="p-2 rounded-lg bg-slate-100 text-slate-600">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-700">PROCESOS CONCLUIDOS</span>
+          <span class="p-2 rounded-lg bg-slate-200 text-slate-800">
             <span class="material-symbols-outlined text-[20px]">task_alt</span>
           </span>
         </div>
         <div class="mt-4 flex items-baseline justify-between">
           <div class="text-4xl font-extrabold text-slate-800 tracking-tight">${concluidos}</div>
-          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">${porcConcluidos}%</span>
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-800 border border-slate-300">${porcConcluidos}%</span>
         </div>
       </div>
     `;
@@ -735,7 +756,7 @@ const DASHBOARD = {
   renderGraficos(casos) {
     const total = casos.length || 1;
 
-    // 1. ESTADO ACTUAL (Ref: code2.html lines 210-350)
+    // 1. ESTADO ACTUAL (Diferenciación alta: En Curso vs Concluidos)
     const ordenEstados = [
       "CON INSPECCION- PENDIENTE DE EMISION DE MEDIDAS PRECAUTORIAS",
       "CON MEDIDAS PRECAUTORIAS",
@@ -766,17 +787,23 @@ const DASHBOARD = {
     if (containerEstados) {
       containerEstados.innerHTML = Object.entries(mapEstados).map(([nombre, cant]) => {
         const esConcluido = concluidos.includes(nombre);
-        const colorBarra = esConcluido ? "bg-slate-500" : "bg-[#0f392b]";
+        const colorBarra = esConcluido ? "bg-slate-700" : "bg-emerald-600";
         const colorTexto = cant > 0 ? "text-slate-900" : "text-slate-400";
         const pct = ((cant / maxVal) * 100).toFixed(1);
+        const tag = esConcluido 
+          ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">CONCLUIDO</span>`
+          : `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">EN CURSO</span>`;
         return `
-          <div class="space-y-1 cursor-pointer group hover:bg-slate-50 p-1.5 rounded-lg transition-colors" data-estado-click="${nombre}">
-            <div class="flex justify-between text-xs">
-              <span class="font-medium text-slate-700 uppercase group-hover:text-[#0f392b] transition-colors">${nombre}</span>
-              <span class="font-bold ${colorTexto} tabular-nums">${cant}</span>
+          <div class="space-y-1 cursor-pointer group hover:bg-slate-50 p-2 rounded-lg transition-colors border border-transparent hover:border-slate-200" data-estado-click="${nombre}">
+            <div class="flex items-center justify-between text-xs gap-2">
+              <div class="flex items-center gap-2 truncate">
+                ${tag}
+                <span class="font-semibold text-slate-800 uppercase group-hover:text-[#0f392b] transition-colors truncate">${nombre}</span>
+              </div>
+              <span class="font-bold ${colorTexto} tabular-nums text-xs">${cant}</span>
             </div>
-            <div class="w-full bg-slate-100 rounded-sm h-3.5 overflow-hidden">
-              <div class="${colorBarra} h-full rounded-sm transition-all duration-300" style="width: ${pct}%"></div>
+            <div class="w-full bg-slate-100 rounded h-3 overflow-hidden">
+              <div class="${colorBarra} h-full rounded transition-all duration-300" style="width: ${pct}%"></div>
             </div>
           </div>
         `;
@@ -787,7 +814,7 @@ const DASHBOARD = {
       });
     }
 
-    // 2. CLASIFICACIÓN (Ref: code2.html lines 356-392)
+    // 2. CLASIFICACIÓN
     const mapClasif = {};
     casos.forEach(c => {
       const cl = c.clasificacion_caso || "Sin Clasificación";
@@ -799,7 +826,7 @@ const DASHBOARD = {
       containerClasif.innerHTML = Object.entries(mapClasif).map(([nombre, cant]) => {
         const pct = ((cant / maxClasif) * 100).toFixed(1);
         return `
-          <div class="cursor-pointer group hover:bg-slate-50 p-1 rounded transition-colors" data-clasif-click="${nombre}">
+          <div class="cursor-pointer group hover:bg-slate-50 p-2 rounded transition-colors" data-clasif-click="${nombre}">
             <div class="flex justify-between text-xs mb-1">
               <span class="text-slate-700 font-medium truncate group-hover:text-[#0f392b]">${nombre}</span>
               <span class="font-bold text-slate-900">${cant}</span>
@@ -815,7 +842,7 @@ const DASHBOARD = {
       });
     }
 
-    // 3. DEPARTAMENTO (Ref: code2.html lines 394-448)
+    // 3. DEPARTAMENTO
     const mapDepto = {};
     casos.forEach(c => {
       const dp = c.departamento || "Sin dato";
@@ -825,11 +852,11 @@ const DASHBOARD = {
     const maxDepto = Math.max(...Object.values(mapDepto), 1);
     const containerDepto = UTIL.qs("#dashboard-departamento-widget");
     if (containerDepto) {
-      containerDepto.innerHTML = deptosOrdenados.slice(0, 6).map(([nombre, cant], idx) => {
+      containerDepto.innerHTML = deptosOrdenados.slice(0, 7).map(([nombre, cant], idx) => {
         const pct = ((cant / maxDepto) * 100).toFixed(1);
-        const color = idx === 0 ? "bg-[#0f392b]" : idx === 1 ? "bg-emerald-800" : idx === 2 ? "bg-emerald-700" : "bg-slate-400";
+        const color = idx === 0 ? "bg-[#0f392b]" : idx === 1 ? "bg-emerald-800" : idx === 2 ? "bg-emerald-700" : "bg-slate-500";
         return `
-          <div class="cursor-pointer group hover:bg-slate-50 p-1 rounded transition-colors" data-depto-click="${nombre}">
+          <div class="cursor-pointer group hover:bg-slate-50 p-2 rounded transition-colors" data-depto-click="${nombre}">
             <div class="flex justify-between text-xs mb-1">
               <span class="text-slate-800 ${idx === 0 ? 'font-bold' : 'font-medium'} group-hover:text-[#0f392b]">${nombre}</span>
               <span class="font-bold ${idx === 0 ? 'text-[#0f392b]' : 'text-slate-800'}">${cant}</span>
@@ -845,7 +872,7 @@ const DASHBOARD = {
       const footerDepto = UTIL.qs("#dashboard-depto-footer");
       if (footerDepto && topDepto) {
         const pctTop = ((topDepto[1] / total) * 100).toFixed(0);
-        footerDepto.textContent = `${topDepto[0]} concentra el ${pctTop}% de las causas`;
+        footerDepto.textContent = `${topDepto[0]} concentra el ${pctTop}% de las causas registradas`;
       }
 
       UTIL.qsa("[data-depto-click]", containerDepto).forEach(el => {
@@ -853,7 +880,7 @@ const DASHBOARD = {
       });
     }
 
-    // 4. GESTIÓN (Ref: code2.html lines 450-482)
+    // 4. GESTIÓN (Requerimiento 2: Fila completa, espaciosa, nunca se desborda)
     const mapGestion = {};
     casos.forEach(c => {
       const g = c.gestion || (c.fecha_ingreso ? c.fecha_ingreso.slice(0, 4) : "Sin año");
@@ -864,28 +891,30 @@ const DASHBOARD = {
     const containerGestion = UTIL.qs("#dashboard-gestion-widget");
     if (containerGestion) {
       containerGestion.innerHTML = `
-        <div class="h-36 flex items-end justify-between gap-3 px-2">
-          ${gestiones.map((g, idx) => {
-            const cant = mapGestion[g];
-            const pct = Math.max(((cant / maxGestion) * 100), 12).toFixed(0);
-            const esMax = cant === maxGestion;
-            const barBg = esMax ? "bg-[#0f392b]" : "bg-emerald-700/60";
-            const numColor = esMax ? "text-[#0f392b]" : "text-slate-600";
-            return `
-              <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end cursor-pointer group" data-gestion-click="${g}">
-                <span class="text-xs font-bold ${numColor}">${cant}</span>
-                <div class="w-full ${barBg} rounded-t-sm shadow-sm group-hover:opacity-80 transition-all" style="height: ${pct}%"></div>
-                <span class="text-xs ${esMax ? 'font-bold text-[#0f392b]' : 'font-medium text-slate-500'} mt-1">${g}</span>
-              </div>
-            `;
-          }).join("")}
+        <div class="min-w-full pb-2">
+          <div class="h-44 flex items-end gap-4 sm:gap-6 px-4 pt-6 border-b border-slate-200">
+            ${gestiones.map((g) => {
+              const cant = mapGestion[g];
+              const pct = Math.max(((cant / maxGestion) * 100), 10).toFixed(0);
+              const esMax = cant === maxGestion;
+              const barBg = esMax ? "bg-[#0f392b]" : "bg-emerald-700/70 hover:bg-[#0f392b]";
+              const numColor = esMax ? "text-[#0f392b] font-extrabold" : "text-slate-700 font-bold";
+              return `
+                <div class="flex-1 min-w-[55px] max-w-[90px] flex flex-col items-center gap-2 h-full justify-end cursor-pointer group" data-gestion-click="${g}" title="Gestión ${g}: ${cant} casos">
+                  <span class="text-xs ${numColor} bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 shadow-2xs group-hover:scale-105 transition-transform">${cant}</span>
+                  <div class="w-full ${barBg} rounded-t-md shadow-sm transition-all duration-300" style="height: ${pct}%"></div>
+                  <span class="text-xs ${esMax ? 'font-bold text-[#0f392b]' : 'font-medium text-slate-600'} mt-1 border-t-2 ${esMax ? 'border-[#0f392b]' : 'border-transparent'} pt-1">${g}</span>
+                </div>
+              `;
+            }).join("")}
+          </div>
         </div>
       `;
 
       const topGestion = Object.entries(mapGestion).sort((a, b) => b[1] - a[1])[0];
       const footerGestion = UTIL.qs("#dashboard-gestion-footer");
       if (footerGestion && topGestion) {
-        footerGestion.textContent = `Gestión ${topGestion[0]} registra el mayor volumen de causas (${topGestion[1]} casos)`;
+        footerGestion.textContent = `Gestión ${topGestion[0]} concentra el mayor volumen anual con ${topGestion[1]} expedientes`;
       }
 
       UTIL.qsa("[data-gestion-click]", containerGestion).forEach(el => {
@@ -894,41 +923,145 @@ const DASHBOARD = {
     }
   },
 
-  pintarChart(canvasId, dataMap, tipo) {
-    const ctx = document.getElementById(canvasId);
-    if (!ctx) return;
-    if (STATE.charts[canvasId]) STATE.charts[canvasId].destroy();
-    // Recorta etiquetas largas para que el eje no quede saturado, sin perder el dato completo (tooltip).
-    const acortar = (s) => (s && s.length > 14) ? s.slice(0, 13) + "…" : s;
-    const labelsCompletos = Object.keys(dataMap);
-    const labels = labelsCompletos.map(acortar);
-    const valores = Object.values(dataMap);
-    STATE.charts[canvasId] = new Chart(ctx, {
-      type: tipo,
-      data: { labels, datasets: [{ data: valores, backgroundColor: "#2f6b4f", borderRadius: 3, maxBarThickness: 34 }] },
-      options: {
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { title: (items) => labelsCompletos[items[0].dataIndex] } }
-        },
-        scales: {
-          x: { ticks: { font: { size: 10 }, autoSkip: false, maxRotation: 32, minRotation: 0 }, grid: { display: false } },
-          y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } }, grid: { color: "#eef1ee" } }
-        }
-      }
+  // Requerimiento 3: Implementación de Últimos Registros incluyendo el usuario creador
+  renderUltimosRegistros(casos) {
+    const cont = UTIL.qs("#dashboard-ultimos-registros");
+    if (!cont) return;
+
+    // Ordenar por registrado_en descendente o nro descendente
+    const ultimos = [...casos].sort((a, b) => {
+      const fa = a.registrado_en || a.fecha_ingreso || "";
+      const fb = b.registrado_en || b.fecha_ingreso || "";
+      if (fb !== fa) return fb.localeCompare(fa);
+      return (b.nro || 0) - (a.nro || 0);
+    }).slice(0, 8);
+
+    if (ultimos.length === 0) {
+      cont.innerHTML = `<p class="hint-text py-4 text-center">No hay registros cargados en el sistema.</p>`;
+      return;
+    }
+
+    cont.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID_INSPEC</th>
+            <th>Predio / Hoja de Ruta</th>
+            <th>Ubicación</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+            <th>Registrado por</th>
+            <th class="text-center">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${ultimos.map(c => {
+            const nombreUsuario = (c.creado_por && STATE.perfilesMap[c.creado_por]) 
+              ? STATE.perfilesMap[c.creado_por] 
+              : ((c.actualizado_por && STATE.perfilesMap[c.actualizado_por]) ? STATE.perfilesMap[c.actualizado_por] : "Sistema");
+            const esConcluido = (c.estado_global || "").includes("CONCLUIDO");
+            const badgeCls = esConcluido ? "badge-concluido" : "badge-curso";
+            return `
+              <tr>
+                <td class="font-mono font-bold text-slate-900">${c.id_inspec}</td>
+                <td>
+                  <div class="font-medium text-slate-800">${c.nombre_predio || "—"}</div>
+                  <div class="text-[10px] text-slate-400">HR: ${c.hoja_de_ruta || "—"}</div>
+                </td>
+                <td>${c.departamento || "—"} <span class="text-slate-400 text-[10px]">(${c.municipio || "—"})</span></td>
+                <td>${UTIL.fechaCorta(c.fecha_ingreso || c.registrado_en)}</td>
+                <td><span class="badge ${badgeCls}">${c.estado_actual || c.estado_global}</span></td>
+                <td>
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                    <span class="font-medium text-slate-700">${nombreUsuario}</span>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <button class="btn btn-sm btn-ver" data-id="${c.id}" title="Ver expediente">
+                    <span class="material-symbols-outlined text-[14px]">visibility</span>
+                    <span>Ver</span>
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+    `;
+
+    UTIL.qsa("button[data-id]", cont).forEach(b => {
+      b.onclick = () => ROUTER.irADetalle(b.dataset.id);
     });
   },
 
+  // Requerimiento 4: Casos de Prioridad Alta con visualización destacada y urgente
   renderPrioridadAlta(casos) {
-    const lista = casos.filter(c => c.prioridad === "ALTA" && c.estado_global === "PROCESO EN CURSO");
     const cont = UTIL.qs("#dashboard-prioridad-alta");
-    if (lista.length === 0) { cont.innerHTML = `<p class="hint-text">No hay casos de prioridad alta en curso.</p>`; return; }
-    cont.innerHTML = `<table class="data-table"><thead><tr><th>ID_INSPEC</th><th>Predio</th><th>Estado Actual</th><th></th></tr></thead><tbody>${
-      lista.map(c => `<tr><td>${c.id_inspec}</td><td>${c.nombre_predio || "—"}</td><td>${c.estado_actual}</td>
-        <td><button class="btn btn-sm btn-secondary" data-id="${c.id}">Ver</button></td></tr>`).join("")
-    }</tbody></table>`;
-    UTIL.qsa("button", cont).forEach(b => b.onclick = () => ROUTER.irADetalle(b.dataset.id));
+    if (!cont) return;
+
+    const lista = casos.filter(c => {
+      const p = (c.prioridad || "").trim().toUpperCase();
+      const eg = (c.estado_global || "").trim().toUpperCase();
+      return p === "ALTA" && eg !== "PROCESO CONCLUIDO" && eg !== "CONCLUIDO";
+    });
+
+    if (lista.length === 0) {
+      cont.innerHTML = `
+        <div class="p-6 text-center text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+          <span class="material-symbols-outlined text-emerald-600 text-3xl mb-1">verified</span>
+          <p class="text-xs font-medium text-slate-600">No hay casos de prioridad alta pendientes de atención urgente.</p>
+        </div>
+      `;
+      return;
+    }
+
+    cont.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID_INSPEC</th>
+            <th>Predio / Causa</th>
+            <th>Ubicación</th>
+            <th>Estado Actual</th>
+            <th>Inspección</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${lista.map(c => `
+            <tr class="bg-rose-50/30 hover:bg-rose-50/60">
+              <td class="font-mono font-bold text-rose-950">
+                <span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200 text-xs">${c.id_inspec}</span>
+              </td>
+              <td>
+                <div class="font-bold text-slate-900">${c.nombre_predio || "—"}</div>
+                <div class="text-[10px] text-slate-500">HR: ${c.hoja_de_ruta || "—"}</div>
+              </td>
+              <td>${c.departamento || "—"} <span class="text-slate-400 text-[10px]">(${c.municipio || "—"})</span></td>
+              <td><span class="text-xs font-semibold text-slate-700">${c.estado_actual}</span></td>
+              <td><span class="badge ${c.estado_inspeccion === 'INSPECCIONADO' ? 'badge-curso' : 'badge-media'}">${c.estado_inspeccion || "PENDIENTE"}</span></td>
+              <td class="text-center whitespace-nowrap">
+                <div class="inline-flex items-center gap-1.5">
+                  <button class="btn btn-sm btn-ver" data-accion="ver" data-id="${c.id}" title="Ver expediente">
+                    <span class="material-symbols-outlined text-[14px]">visibility</span>
+                    <span>Ver</span>
+                  </button>
+                  <button class="btn btn-sm btn-editar" data-accion="editar" data-id="${c.id}" title="Editar expediente">
+                    <span class="material-symbols-outlined text-[14px]">edit</span>
+                    <span>Editar</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+
+    UTIL.qsa("button[data-accion]", cont).forEach(b => {
+      b.onclick = () => b.dataset.accion === "ver" ? ROUTER.irADetalle(b.dataset.id) : ROUTER.irAEditar(b.dataset.id);
+    });
   }
 };
 
@@ -969,89 +1102,112 @@ const LISTADO = {
   },
 
   llenarSelectsFiltro() {
+    const casos = STATE.casosCache || [];
+
+    const extractUnicos = (campo) => {
+      const set = new Set();
+      casos.forEach(c => {
+        const val = c[campo];
+        if (val !== undefined && val !== null && String(val).trim() !== "") {
+          set.add(String(val).trim());
+        }
+      });
+      return [...set].sort();
+    };
+
+    const poblar = (id, placeholder, valores, valorSeleccionado) => {
+      const sel = UTIL.qs(id);
+      if (!sel) return;
+      const actual = valorSeleccionado !== undefined ? valorSeleccionado : sel.value;
+      sel.innerHTML = `<option value="">${placeholder}</option>` + 
+        valores.map(v => `<option value="${v}" ${v === actual ? "selected" : ""}>${v}</option>`).join("");
+    };
+
+    // Cascada territorial dinámica
     const depSel = UTIL.qs("#filtro-departamento");
-    depSel.innerHTML = `<option value="">Departamento</option>` + TERRITORIOS.departamentos().map(d => `<option value="${d}">${d}</option>`).join("");
-    depSel.onchange = () => {
-      const provSel = UTIL.qs("#filtro-provincia");
-      provSel.innerHTML = `<option value="">Provincia</option>` + TERRITORIOS.provincias(depSel.value).map(p => `<option value="${p}">${p}</option>`).join("");
-      UTIL.qs("#filtro-municipio").innerHTML = `<option value="">Municipio</option>`;
+    const provSel = UTIL.qs("#filtro-provincia");
+    const munSel = UTIL.qs("#filtro-municipio");
+
+    const deptosCasos = extractUnicos("departamento");
+    const deptos = deptosCasos.length > 0 ? deptosCasos : TERRITORIOS.departamentos();
+    poblar("#filtro-departamento", "Departamento", deptos, STATE.filtros.departamento);
+
+    const actualizarProvincias = () => {
+      const dep = depSel ? depSel.value : "";
+      const provs = [...new Set(casos.filter(c => !dep || c.departamento === dep).map(c => (c.provincia || "").trim()).filter(Boolean))].sort();
+      poblar("#filtro-provincia", "Provincia", provs.length ? provs : (dep ? TERRITORIOS.provincias(dep) : []), STATE.filtros.provincia);
+      actualizarMunicipios();
     };
-    UTIL.qs("#filtro-provincia").onchange = () => {
-      const dep = depSel.value, prov = UTIL.qs("#filtro-provincia").value;
-      UTIL.qs("#filtro-municipio").innerHTML = `<option value="">Municipio</option>` + TERRITORIOS.municipios(dep, prov).map(m => `<option value="${m}">${m}</option>`).join("");
+
+    const actualizarMunicipios = () => {
+      const dep = depSel ? depSel.value : "";
+      const prov = provSel ? provSel.value : "";
+      const muns = [...new Set(casos.filter(c => (!dep || c.departamento === dep) && (!prov || c.provincia === prov)).map(c => (c.municipio || "").trim()).filter(Boolean))].sort();
+      poblar("#filtro-municipio", "Municipio", muns.length ? muns : (dep && prov ? TERRITORIOS.municipios(dep, prov) : []), STATE.filtros.municipio);
     };
 
-    UTIL.qs("#filtro-clasificacion").innerHTML = `<option value="">Clasificación</option>` +
-      ["DENUNCIA DE AVASALLAMIENTO", "IDENTIFICACION DE ACTIVIDAD ANTROPICA", "OTROS"].map(c => `<option value="${c}">${c}</option>`).join("");
-    UTIL.qs("#filtro-tipo-propiedad").innerHTML = `<option value="">Tipo de propiedad</option>` +
-      ["TIERRA FISCAL", "COMUNIDAD", "OTROS"].map(c => `<option value="${c}">${c}</option>`).join("");
+    if (depSel) depSel.onchange = () => { actualizarProvincias(); LISTADO.leerFiltros(); };
+    if (provSel) provSel.onchange = () => { actualizarMunicipios(); LISTADO.leerFiltros(); };
+    actualizarProvincias();
 
-    const ordenEstados = [
-      "CON INSPECCION- PENDIENTE DE EMISION DE MEDIDAS PRECAUTORIAS",
-      "CON MEDIDAS PRECAUTORIAS",
-      "CON INTIMACION",
-      "CON CARTA AL COMANDO",
-      "POR DEFINIR",
-      "DESALOJADO",
-      "DENUNCIA DE AVASALLAMIENTO DESESTIMADA",
-      "SE PROSIGUIO CON EL TRAMITE DE DOTACION"
-    ];
-    const existentes = [...new Set(STATE.casosCache.map(c => (c.estado_actual || "").trim()).filter(Boolean))];
-    const todosEstados = [...ordenEstados];
-    existentes.forEach(e => { if (!todosEstados.includes(e)) todosEstados.push(e); });
-    UTIL.qs("#filtro-estado-actual").innerHTML = `<option value="">Estado actual</option>` + todosEstados.map(c => `<option value="${c}">${c}</option>`).join("");
+    // Filtros 100% dinámicos directamente de los valores existentes en BD
+    poblar("#filtro-tipo-propiedad", "Tipo de propiedad", extractUnicos("tipo_propiedad"), STATE.filtros.tipo_propiedad);
+    poblar("#filtro-clasificacion", "Clasificación", extractUnicos("clasificacion_caso"), STATE.filtros.clasificacion);
 
-    UTIL.qs("#filtro-accion").innerHTML = `<option value="">Acción a seguir</option>` +
-      ["PROSEGUIR CON EL PROCESO DE DOTACION","MEDIDAS PRECAUTORIAS","DESESTIMAR LA DENUNCIA","POR DETERMINAR","REPROGRAMAR INSPECCION","SIN DEFINIR"].map(a => `<option value="${a}">${a}</option>`).join("");
+    // Prioridad ordenada ALTA, MEDIA, BAJA
+    const prios = extractUnicos("prioridad");
+    const ordenP = ["ALTA", "MEDIA", "BAJA"];
+    prios.sort((a, b) => {
+      const ia = ordenP.indexOf(a.toUpperCase());
+      const ib = ordenP.indexOf(b.toUpperCase());
+      if (ia !== -1 && ib !== -1) return ia - ib;
+      return a.localeCompare(b);
+    });
+    poblar("#filtro-prioridad", "Prioridad", prios, STATE.filtros.prioridad);
+
+    poblar("#filtro-estado-global", "Estado global", extractUnicos("estado_global"), STATE.filtros.estado_global);
+    poblar("#filtro-estado-actual", "Estado actual", extractUnicos("estado_actual"), STATE.filtros.estado_actual);
+    poblar("#filtro-estado-inspeccion", "Estado de inspección", extractUnicos("estado_inspeccion"), STATE.filtros.estado_inspeccion);
+    poblar("#filtro-accion", "Acción a seguir", extractUnicos("accion_a_seguir"), STATE.filtros.accion);
+  },
+
+  leerFiltros() {
+    STATE.filtros = {
+      texto: UTIL.qs("#filtro-texto").value.trim(),
+      departamento: UTIL.qs("#filtro-departamento").value,
+      provincia: UTIL.qs("#filtro-provincia").value,
+      municipio: UTIL.qs("#filtro-municipio").value,
+      tipo_propiedad: UTIL.qs("#filtro-tipo-propiedad").value,
+      clasificacion: UTIL.qs("#filtro-clasificacion").value,
+      prioridad: UTIL.qs("#filtro-prioridad").value,
+      estado_global: UTIL.qs("#filtro-estado-global").value,
+      estado_actual: UTIL.qs("#filtro-estado-actual").value,
+      estado_inspeccion: UTIL.qs("#filtro-estado-inspeccion").value,
+      accion: UTIL.qs("#filtro-accion").value,
+      gestion: UTIL.qs("#filtro-gestion").value
+    };
+    STATE.filtroActivoLabel = null;
+    LISTADO.pintarBannerFiltro();
+    LISTADO.pintarTabla();
   },
 
   enlazarFiltros() {
     const ids = ["filtro-texto","filtro-departamento","filtro-provincia","filtro-municipio","filtro-tipo-propiedad",
       "filtro-clasificacion","filtro-prioridad","filtro-estado-global","filtro-estado-actual","filtro-estado-inspeccion",
       "filtro-accion","filtro-gestion"];
-    const leer = () => {
-      STATE.filtros = {
-        texto: UTIL.qs("#filtro-texto").value.trim(),
-        departamento: UTIL.qs("#filtro-departamento").value,
-        provincia: UTIL.qs("#filtro-provincia").value,
-        municipio: UTIL.qs("#filtro-municipio").value,
-        tipo_propiedad: UTIL.qs("#filtro-tipo-propiedad").value,
-        clasificacion: UTIL.qs("#filtro-clasificacion").value,
-        prioridad: UTIL.qs("#filtro-prioridad").value,
-        estado_global: UTIL.qs("#filtro-estado-global").value,
-        estado_actual: UTIL.qs("#filtro-estado-actual").value,
-        estado_inspeccion: UTIL.qs("#filtro-estado-inspeccion").value,
-        accion: UTIL.qs("#filtro-accion").value,
-        gestion: UTIL.qs("#filtro-gestion").value
-      };
-      STATE.filtroActivoLabel = null;
-      LISTADO.pintarBannerFiltro();
-      LISTADO.pintarTabla();
-    };
+
     ids.forEach(id => {
       const el = UTIL.qs("#" + id);
-      el.oninput = UTIL.debounce(leer, 250);
-      el.onchange = leer;
+      if (!el) return;
+      el.oninput = UTIL.debounce(LISTADO.leerFiltros, 250);
+      el.onchange = LISTADO.leerFiltros;
     });
 
-    // La cascada departamento → provincia → municipio se asigna DESPUÉS del bucle genérico
-    // (si no, el bucle de arriba pisa estos onchange y la cascada deja de funcionar).
-    UTIL.qs("#filtro-departamento").onchange = () => {
-      const dep = UTIL.qs("#filtro-departamento").value;
-      UTIL.qs("#filtro-provincia").innerHTML = `<option value="">Provincia</option>` + TERRITORIOS.provincias(dep).map(p => `<option value="${p}">${p}</option>`).join("");
-      UTIL.qs("#filtro-municipio").innerHTML = `<option value="">Municipio</option>`;
-      leer();
-    };
-    UTIL.qs("#filtro-provincia").onchange = () => {
-      const dep = UTIL.qs("#filtro-departamento").value, prov = UTIL.qs("#filtro-provincia").value;
-      UTIL.qs("#filtro-municipio").innerHTML = `<option value="">Municipio</option>` + TERRITORIOS.municipios(dep, prov).map(m => `<option value="${m}">${m}</option>`).join("");
-      leer();
-    };
-
     UTIL.qs("#btn-reset-filtros").onclick = () => {
-      ids.forEach(id => { const el = UTIL.qs("#" + id); if (el.tagName === "SELECT") el.selectedIndex = 0; else el.value = ""; });
+      ids.forEach(id => { const el = UTIL.qs("#" + id); if (el) { if (el.tagName === "SELECT") el.selectedIndex = 0; else el.value = ""; } });
       STATE.filtros = {};
       STATE.filtroActivoLabel = null;
+      LISTADO.llenarSelectsFiltro();
       LISTADO.pintarBannerFiltro();
       LISTADO.pintarTabla();
     };
@@ -1075,6 +1231,7 @@ const LISTADO = {
 
   async refrescar() {
     await CASOS.fetchTodos();
+    LISTADO.llenarSelectsFiltro();
     LISTADO.pintarTabla();
   },
 
@@ -1082,26 +1239,109 @@ const LISTADO = {
     const lista = CASOS.aplicaFiltros(STATE.casosCache, STATE.filtros || {});
     const body = UTIL.qs("#tabla-casos-body");
     UTIL.qs("#listado-vacio").classList.toggle("hidden", lista.length > 0);
-    body.innerHTML = lista.map(c => `
-      <tr>
-        <td>${c.nro}</td><td>${c.id_inspec}</td><td>${c.hoja_de_ruta || "—"}</td>
-        <td>${UTIL.fechaCorta(c.fecha_ingreso)}</td><td>${c.gestion || "—"}</td>
-        <td>${c.departamento || "—"}</td><td>${c.provincia || "—"}</td><td>${c.municipio || "—"}</td>
-        <td>${c.nombre_predio || "—"}</td><td>${c.tipo_propiedad || "—"}</td><td>${c.clasificacion_caso || "—"}</td>
-        <td>${c.denunciante || "—"}</td>
-        <td>${LISTADO.badgePrioridad(c.prioridad)}</td>
-        <td>${LISTADO.badgeEstadoGlobal(c.estado_global)}</td>
-        <td>${c.estado_actual}</td><td>${c.estado_inspeccion || "—"}</td><td>${c.accion_a_seguir || "—"}</td>
-        <td>${(c.actualizado_por && c.actualizado_por === STATE.user.id) ? "Yo" : "—"}</td>
-        <td>${UTIL.fechaHora(c.actualizado_en)}</td>
-        <td>
-          <button class="btn btn-sm btn-secondary" data-accion="ver" data-id="${c.id}">Ver</button>
-          <button class="btn btn-sm btn-secondary" data-accion="editar" data-id="${c.id}">Editar</button>
-        </td>
-      </tr>`).join("");
+    body.innerHTML = lista.map(c => {
+      const nombreUsuario = (c.creado_por && STATE.perfilesMap[c.creado_por]) 
+        ? STATE.perfilesMap[c.creado_por] 
+        : ((c.actualizado_por && STATE.perfilesMap[c.actualizado_por]) ? STATE.perfilesMap[c.actualizado_por] : "—");
+
+      return `
+        <tr>
+          <td class="font-mono text-slate-500">${c.nro}</td>
+          <td class="font-mono font-bold text-slate-900">${c.id_inspec}</td>
+          <td>${c.hoja_de_ruta || "—"}</td>
+          <td>${UTIL.fechaCorta(c.fecha_ingreso)}</td>
+          <td>${c.gestion || "—"}</td>
+          <td>${c.departamento || "—"}</td>
+          <td>${c.provincia || "—"}</td>
+          <td>${c.municipio || "—"}</td>
+          <td class="font-semibold text-slate-800">${c.nombre_predio || "—"}</td>
+          <td>${c.tipo_propiedad || "—"}</td>
+          <td>${c.clasificacion_caso || "—"}</td>
+          <td>${c.denunciante || "—"}</td>
+          <td>${LISTADO.badgePrioridad(c.prioridad)}</td>
+          <td>${LISTADO.badgeEstadoGlobal(c.estado_global)}</td>
+          <td><span class="font-medium text-slate-700 text-xs">${c.estado_actual}</span></td>
+          <td><span class="badge ${c.estado_inspeccion === 'INSPECCIONADO' ? 'badge-curso' : 'badge-media'}">${c.estado_inspeccion || "—"}</span></td>
+          <td>${c.accion_a_seguir || "—"}</td>
+          <td>
+            <div class="flex items-center gap-1.5 whitespace-nowrap">
+              <span class="w-2 h-2 rounded-full ${c.creado_por ? 'bg-emerald-500' : 'bg-slate-300'} shrink-0"></span>
+              <span class="text-xs text-slate-700">${nombreUsuario}</span>
+            </div>
+          </td>
+          <td class="text-[11px] text-slate-400 whitespace-nowrap">${UTIL.fechaHora(c.actualizado_en)}</td>
+          <td class="text-center whitespace-nowrap">
+            <div class="inline-flex items-center gap-1.5">
+              <button class="btn btn-sm btn-ver" data-accion="ver" data-id="${c.id}" title="Ver expediente">
+                <span class="material-symbols-outlined text-[14px]">visibility</span>
+                <span>Ver</span>
+              </button>
+              <button class="btn btn-sm btn-editar" data-accion="editar" data-id="${c.id}" title="Editar expediente">
+                <span class="material-symbols-outlined text-[14px]">edit</span>
+                <span>Editar</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
     UTIL.qsa("button[data-accion]", body).forEach(b => {
       b.onclick = () => b.dataset.accion === "ver" ? ROUTER.irADetalle(b.dataset.id) : ROUTER.irAEditar(b.dataset.id);
     });
+
+    LISTADO.sincronizarScrolls();
+  },
+
+  // Requerimiento 7: Scroll horizontal accesible en cualquier posición
+  sincronizarScrolls() {
+    const wrap = UTIL.qs("#tabla-casos-wrap");
+    const topBar = UTIL.qs("#tabla-casos-scroll-top");
+    const topInner = UTIL.qs("#tabla-casos-scroll-top-inner");
+    const floatBar = UTIL.qs("#tabla-casos-scroll-floating");
+    const floatInner = UTIL.qs("#tabla-casos-scroll-floating-inner");
+    const table = UTIL.qs("#tabla-casos");
+
+    if (!wrap || !topBar || !floatBar || !table) return;
+
+    const actualizarAnchos = () => {
+      const sw = table.scrollWidth;
+      topInner.style.width = sw + "px";
+      floatInner.style.width = sw + "px";
+    };
+    actualizarAnchos();
+
+    let sincro = false;
+    const scrollHandler = (origen, destinos) => {
+      if (sincro) return;
+      sincro = true;
+      destinos.forEach(d => { if (d) d.scrollLeft = origen.scrollLeft; });
+      setTimeout(() => { sincro = false; }, 15);
+    };
+
+    topBar.onscroll = () => scrollHandler(topBar, [wrap, floatBar]);
+    wrap.onscroll = () => scrollHandler(wrap, [topBar, floatBar]);
+    floatBar.onscroll = () => scrollHandler(floatBar, [wrap, topBar]);
+
+    // Visibilidad inteligente de la barra flotante según posición en pantalla
+    const verificarVisibilidadFlotante = () => {
+      const rect = wrap.getBoundingClientRect();
+      const h = window.innerHeight;
+      const necesitaScroll = wrap.scrollWidth > wrap.clientWidth;
+      const fondoFuera = rect.bottom > h;
+      const arribaVisible = rect.top < h - 40;
+      if (necesitaScroll && fondoFuera && arribaVisible) {
+        floatBar.style.display = "block";
+      } else {
+        floatBar.style.display = "none";
+      }
+    };
+
+    window.removeEventListener("scroll", LISTADO._scrollFloatListener || (()=>{}));
+    LISTADO._scrollFloatListener = UTIL.debounce(verificarVisibilidadFlotante, 50);
+    window.addEventListener("scroll", LISTADO._scrollFloatListener);
+    window.addEventListener("resize", () => { actualizarAnchos(); verificarVisibilidadFlotante(); });
+    verificarVisibilidadFlotante();
   },
 
   badgePrioridad(p) {
@@ -1398,23 +1638,58 @@ const FORM = {
     }
   },
 
-  // Aviso grande y llamativo para que el personal técnico no olvide cargar
-  // el polígono del área a la GDB usando este mismo código.
+  // Requerimiento 10: Modal de registro compacto, moderno y con botón para copiar ID_INSPEC
   mostrarAvisoCodigoCaso(caso) {
-    UTIL.qs("#modal-box").className = "modal-box modal-box-grande";
+    UTIL.qs("#modal-box").className = "modal-box modal-box-registro";
     MODAL.abrir(`
-      <div class="modal-icono">${ICONS.pin}</div>
-      <h3>Caso registrado correctamente</h3>
-      <p>Código del caso:</p>
-      <div class="modal-id-caso">${caso.id_inspec}</div>
-      <div class="modal-instruccion">
-        ${ICONS.alert} <b>Importante:</b> cargue el polígono del área en la GDB (base de datos gráfica) utilizando
-        este mismo código <b>${caso.id_inspec}</b> como identificador (ID_INSPEC). Sin este paso,
-        el caso no podrá vincularse con la información espacial.
+      <div class="modal-reg-icon">
+        <span class="material-symbols-outlined text-[24px]">task_alt</span>
       </div>
-      <div class="modal-actions" style="justify-content:center;">
-        <button class="btn btn-primary" id="m-continuar">Entendido, continuar</button>
-      </div>`);
+      <h3 class="text-base font-bold text-slate-900 mb-1">Caso Registrado Exitosamente</h3>
+      <p class="text-xs text-slate-500">Identificador único asignado al expediente:</p>
+      
+      <div class="modal-id-badge">
+        <span class="modal-id-text" id="reg-modal-id">${caso.id_inspec}</span>
+        <button type="button" class="modal-btn-copy" id="btn-copiar-id-inspec" title="Copiar ID_INSPEC al portapapeles">
+          <span class="material-symbols-outlined text-[14px]">content_copy</span>
+          <span>Copiar</span>
+        </button>
+      </div>
+
+      <div class="modal-aviso-gdb">
+        <div class="flex items-start gap-1.5 font-bold mb-1 text-amber-900">
+          <span class="material-symbols-outlined text-[16px] text-amber-600 shrink-0">info</span>
+          <span>Vinculación Espacial en GDB:</span>
+        </div>
+        <p class="text-[11px] text-amber-800 leading-relaxed">
+          Cargue el polígono del área en la base de datos gráfica (GDB) utilizando exactamente este código 
+          <b>${caso.id_inspec}</b> en el campo <code>ID_INSPEC</code> para asociar la cartografía al expediente.
+        </p>
+      </div>
+
+      <div class="modal-actions" style="justify-content:center; margin-top: 1.25rem;">
+        <button class="btn btn-primary px-5 py-2 text-xs" id="m-continuar">
+          <span>Ir al expediente del caso</span>
+          <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+        </button>
+      </div>
+    `);
+
+    const btnCopy = UTIL.qs("#btn-copiar-id-inspec");
+    if (btnCopy) {
+      btnCopy.onclick = () => {
+        navigator.clipboard.writeText(caso.id_inspec).then(() => {
+          btnCopy.innerHTML = `<span class="material-symbols-outlined text-[14px] text-emerald-600">check</span><span class="text-emerald-700">¡Copiado!</span>`;
+          UTIL.toast("ID_INSPEC copiado al portapapeles: " + caso.id_inspec, "success");
+          setTimeout(() => {
+            if (btnCopy) btnCopy.innerHTML = `<span class="material-symbols-outlined text-[14px]">content_copy</span><span>Copiar</span>`;
+          }, 2500);
+        }).catch(() => {
+          UTIL.toast("Código: " + caso.id_inspec, "info");
+        });
+      };
+    }
+
     UTIL.qs("#m-continuar").onclick = async () => {
       MODAL.cerrar();
       await ROUTER.irADetalle(caso.id);
@@ -1472,14 +1747,14 @@ const DETALLE = {
     STATE.casoActual = caso;
 
     UTIL.qs("#detalle-header").innerHTML = `
-      <div class="kv"><span class="k">ID_INSPEC</span><span class="v">${caso.id_inspec}</span></div>
-      <div class="kv"><span class="k">Predio</span><span class="v">${caso.nombre_predio || "—"}</span></div>
+      <div class="kv"><span class="k">ID_INSPEC</span><span class="v font-mono font-bold">${caso.id_inspec}</span></div>
+      <div class="kv"><span class="k">Predio</span><span class="v font-bold">${caso.nombre_predio || "—"}</span></div>
       <div class="kv"><span class="k">Departamento</span><span class="v">${caso.departamento || "—"}</span></div>
       <div class="kv"><span class="k">Municipio</span><span class="v">${caso.municipio || "—"}</span></div>
       <div class="kv"><span class="k">Estado Global</span><span class="v">${LISTADO.badgeEstadoGlobal(caso.estado_global)}</span></div>
-      <div class="kv"><span class="k">Estado Actual</span><span class="v">${caso.estado_actual}</span></div>
+      <div class="kv"><span class="k">Estado Actual</span><span class="v"><span class="badge badge-curso">${caso.estado_actual}</span></span></div>
       <div class="kv"><span class="k">Prioridad</span><span class="v">${LISTADO.badgePrioridad(caso.prioridad)}</span></div>
-      <div class="kv"><span class="k">Completitud</span><span class="v">${CASOS.completitud(caso)}%</span></div>`;
+      <div class="kv"><span class="k">Completitud</span><span class="v font-bold text-[#0f392b]">${CASOS.completitud(caso)}%</span></div>`;
 
     UTIL.qs("#btn-detalle-editar").onclick = () => ROUTER.irAEditar(caso.id);
     UTIL.qs("#btn-detalle-volver").onclick = () => ROUTER.ir("listado");
@@ -1499,42 +1774,192 @@ const DETALLE = {
     });
   },
 
-  bloque(titulo, campos, caso) {
-    const filas = campos.map(c => `<div class="kv"><span class="k">${c.replace(/_/g," ")}</span><span class="v">${
-      UTIL.vacio(caso[c]) ? "—" : (c.startsWith("fecha") ? UTIL.fechaCorta(caso[c]) : caso[c])
-    }</span></div>`).join("");
-    return `<div class="panel"><h3>${titulo}</h3><div class="detalle-header" style="border:none;padding:0;">${filas}</div></div>`;
-  },
-
+  // Requerimiento 9: Resumen estructurado como formulario ordenado y limpio
   renderResumen(caso) {
-    let html = DETALLE.bloque("Parte 1 · Registro", CAMPOS_PARTE1, caso);
-    html += DETALLE.bloque("Parte 2 · Inspección", CAMPOS_PARTE2, caso);
-    if (caso.accion_a_seguir === "EMITIR MEDIDAS PRECAUTORIAS" || caso.accion_a_seguir === "MEDIDAS PRECAUTORIAS") {
-      html += DETALLE.bloque("Parte 3 · Medidas Precautorias", CAMPOS_PARTE3, caso);
+    const ETIQUETAS = {
+      hoja_de_ruta: "Hoja de Ruta",
+      fecha_ingreso: "Fecha de Ingreso",
+      departamento: "Departamento",
+      provincia: "Provincia",
+      municipio: "Municipio",
+      nombre_predio: "Nombre del Predio",
+      tipo_propiedad: "Tipo de Propiedad",
+      idpredio: "IDPREDIO / Código Catastral",
+      codigo_expediente: "Código de Expediente",
+      clasificacion_caso: "Clasificación del Caso",
+      denunciante: "Denunciante / Impetrante",
+      denunciados: "Denunciados / Presuntos Avasalladores",
+      informe_atencion: "Informe de Atención",
+      fecha_informe_atencion: "Fecha del Informe de Atención",
+      prioridad: "Prioridad",
+      asociado_comunidad: "¿Asociado a Comunidad?",
+      nombre_comunidad: "Nombre de la Comunidad",
+      corresponde_atender: "¿Corresponde Atender?",
+      fundamento_determinacion: "Fundamento / Observación de la Determinación",
+      estado_global: "Estado Global",
+      estado_actual: "Estado Actual",
+      // Parte 2
+      fecha_programada_inspeccion: "Fecha Programada de Inspección",
+      tecnico_responsable: "Técnico Responsable",
+      observaciones_programacion: "Observaciones de Programación",
+      fecha_real_inspeccion: "Fecha Real de Inspección",
+      estado_inspeccion: "Estado de la Inspección",
+      informe_inspeccion: "Informe de Inspección",
+      fecha_informe: "Fecha del Informe",
+      gestion_inspeccion: "Gestión de Inspección",
+      conclusion_informe_inspeccion: "Conclusión del Informe de Inspección",
+      accion_a_seguir: "Acción a Seguir",
+      observaciones_parte2: "Observaciones de Campo",
+      // Parte 3
+      res_medidas_precautorias: "Resolución de Medidas Precautorias",
+      fecha_resolucion_medidas: "Fecha de Resolución",
+      inf_medidas_precautorias: "Informe de Medidas Precautorias",
+      fecha_informe_medidas: "Fecha Informe de Medidas",
+      nota_remision_medidas: "Nota de Remisión",
+      fecha_nota: "Fecha de Nota",
+      intimacion: "Intimación",
+      fecha_intimacion: "Fecha de Intimación",
+      notificacion_intimacion: "Notificación de Intimación",
+      informe_verificacion_intimacion: "Informe de Verificación",
+      fecha_informe_verificacion: "Fecha Informe Verificación",
+      estado_verificacion: "Estado de la Verificación",
+      detalle_verificacion: "Detalle de la Verificación",
+      carta_comando: "Carta al Comando",
+      fecha_carta_comando: "Fecha Carta al Comando",
+      informe_acta_desalojo: "Informe / Acta de Desalojo",
+      fecha_desalojo: "Fecha de Desalojo",
+      observaciones_parte3: "Observaciones Medidas y Desalojo"
+    };
+
+    const formatearValor = (campo, valor) => {
+      if (UTIL.vacio(valor)) return `<span class="resumen-campo-val vacio">Sin registrar</span>`;
+      if (campo.startsWith("fecha")) return `<span class="resumen-campo-val font-semibold">${UTIL.fechaCorta(valor)}</span>`;
+      if (campo === "prioridad") return LISTADO.badgePrioridad(valor);
+      if (campo === "estado_global") return LISTADO.badgeEstadoGlobal(valor);
+      if (campo === "estado_actual") return `<span class="badge badge-curso">${valor}</span>`;
+      if (campo === "estado_inspeccion") return `<span class="badge ${valor === 'INSPECCIONADO' ? 'badge-curso' : 'badge-media'}">${valor}</span>`;
+      return `<span class="resumen-campo-val">${valor}</span>`;
+    };
+
+    const renderGrupoCampos = (campos) => {
+      return campos.map(c => {
+        const esTextoLargo = ["fundamento_determinacion", "conclusion_informe_inspeccion", "detalle_verificacion", "observaciones_parte2", "observaciones_parte3", "observaciones_programacion"].includes(c);
+        const label = ETIQUETAS[c] || c.replace(/_/g, " ");
+        const valorHtml = formatearValor(c, caso[c]);
+        return `
+          <div class="resumen-campo ${esTextoLargo ? 'col-span-full' : ''}">
+            <span class="resumen-campo-label">${label}</span>
+            ${valorHtml}
+          </div>
+        `;
+      }).join("");
+    };
+
+    let html = `
+      <!-- PARTE 1 -->
+      <div class="resumen-seccion">
+        <div class="resumen-seccion-header">
+          <div class="resumen-seccion-titulo">
+            <span class="material-symbols-outlined text-[18px]">folder</span>
+            <span>Parte 1 · Registro del Caso</span>
+          </div>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">Expediente Oficial</span>
+        </div>
+        <div class="resumen-form-grid">
+          ${renderGrupoCampos(CAMPOS_PARTE1)}
+        </div>
+      </div>
+
+      <!-- PARTE 2 -->
+      <div class="resumen-seccion">
+        <div class="resumen-seccion-header">
+          <div class="resumen-seccion-titulo">
+            <span class="material-symbols-outlined text-[18px]">pin_drop</span>
+            <span>Parte 2 · Análisis e Inspección de Campo</span>
+          </div>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded ${caso.estado_inspeccion === 'INSPECCIONADO' ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800'}">
+            ${caso.estado_inspeccion || "PENDIENTE"}
+          </span>
+        </div>
+        <div class="resumen-form-grid">
+          ${renderGrupoCampos(CAMPOS_PARTE2)}
+        </div>
+      </div>
+    `;
+
+    // PARTE 3 (si aplica)
+    const aplicaParte3 = caso.accion_a_seguir === "EMITIR MEDIDAS PRECAUTORIAS" || caso.accion_a_seguir === "MEDIDAS PRECAUTORIAS" || !UTIL.vacio(caso.res_medidas_precautorias);
+    if (aplicaParte3) {
+      html += `
+        <div class="resumen-seccion">
+          <div class="resumen-seccion-header">
+            <div class="resumen-seccion-titulo">
+              <span class="material-symbols-outlined text-[18px]">gavel</span>
+              <span>Parte 3 · Medidas Precautorias y Seguimiento</span>
+            </div>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-50 text-indigo-800">Medidas Activas</span>
+          </div>
+          <div class="resumen-form-grid">
+            ${renderGrupoCampos(CAMPOS_PARTE3)}
+          </div>
+        </div>
+      `;
     }
+
     UTIL.qs("#tab-resumen").innerHTML = html;
   },
 
+  // Requerimiento 10: Línea de tiempo compacta como un flujo o camino ordenado
   async renderLineaTiempo(caso) {
     const etapas = [
-      { titulo: "Registro", ok: true, fecha: caso.registrado_en, doc: caso.hoja_de_ruta },
-      { titulo: "Informe de Atención", ok: !UTIL.vacio(caso.informe_atencion), fecha: null, doc: caso.informe_atencion },
-      { titulo: "Decisión de Atención", ok: caso.corresponde_atender !== "PENDIENTE", fecha: null, doc: caso.corresponde_atender },
-      { titulo: "Programación de Inspección", ok: !UTIL.vacio(caso.fecha_programada_inspeccion), fecha: caso.fecha_programada_inspeccion, doc: caso.tecnico_responsable },
-      { titulo: "Inspección Realizada", ok: !UTIL.vacio(caso.fecha_real_inspeccion), fecha: caso.fecha_real_inspeccion, doc: null },
-      { titulo: "Informe de Inspección", ok: !UTIL.vacio(caso.fecha_informe), fecha: caso.fecha_informe, doc: caso.informe_inspeccion },
+      { titulo: "Registro Inicial", ok: true, fecha: caso.registrado_en || caso.fecha_ingreso, doc: caso.hoja_de_ruta ? `Hoja de Ruta: ${caso.hoja_de_ruta}` : null },
+      { titulo: "Informe de Atención", ok: !UTIL.vacio(caso.informe_atencion), fecha: caso.fecha_informe_atencion, doc: caso.informe_atencion },
+      { titulo: "Determinación del Caso", ok: caso.corresponde_atender && caso.corresponde_atender !== "PENDIENTE", fecha: null, doc: caso.corresponde_atender ? `Determinación: ${caso.corresponde_atender}` : null },
+      { titulo: "Programación de Inspección", ok: !UTIL.vacio(caso.fecha_programada_inspeccion), fecha: caso.fecha_programada_inspeccion, doc: caso.tecnico_responsable ? `Técnico: ${caso.tecnico_responsable}` : null },
+      { titulo: "Inspección Realizada", ok: !UTIL.vacio(caso.fecha_real_inspeccion) || caso.estado_inspeccion === "INSPECCIONADO", fecha: caso.fecha_real_inspeccion, doc: caso.estado_inspeccion },
+      { titulo: "Informe Técnico de Inspección", ok: !UTIL.vacio(caso.fecha_informe) || !UTIL.vacio(caso.informe_inspeccion), fecha: caso.fecha_informe, doc: caso.informe_inspeccion },
       { titulo: "Medidas Precautorias", ok: !UTIL.vacio(caso.res_medidas_precautorias), fecha: caso.fecha_resolucion_medidas, doc: caso.res_medidas_precautorias },
       { titulo: "Intimación", ok: !UTIL.vacio(caso.intimacion), fecha: caso.fecha_intimacion, doc: caso.intimacion },
-      { titulo: "Verificación", ok: !UTIL.vacio(caso.informe_verificacion_intimacion), fecha: caso.fecha_informe_verificacion, doc: caso.estado_verificacion },
+      { titulo: "Verificación de Cumplimiento", ok: !UTIL.vacio(caso.informe_verificacion_intimacion), fecha: caso.fecha_informe_verificacion, doc: caso.estado_verificacion },
       { titulo: "Carta al Comando", ok: !UTIL.vacio(caso.carta_comando), fecha: caso.fecha_carta_comando, doc: caso.carta_comando },
-      { titulo: "Desalojo", ok: !UTIL.vacio(caso.fecha_desalojo), fecha: caso.fecha_desalojo, doc: caso.informe_acta_desalojo }
+      { titulo: "Desalojo / Conclusión", ok: !UTIL.vacio(caso.fecha_desalojo) || caso.estado_actual === "DESALOJADO", fecha: caso.fecha_desalojo, doc: caso.informe_acta_desalojo }
     ];
-    UTIL.qs("#tab-linea-tiempo").innerHTML = `<ul class="timeline">${
-      etapas.map(e => `<li class="${e.ok ? "completo" : "pendiente-etapa"}">
-        <div class="t-titulo">${e.titulo} ${e.ok ? ICONS.check : ICONS.clock + " Pendiente"}</div>
-        <div class="t-meta">${e.fecha ? UTIL.fechaCorta(e.fecha) : ""} ${e.doc ? "· " + e.doc : ""}</div>
-      </li>`).join("")
-    }</ul>`;
+
+    const cont = UTIL.qs("#tab-linea-tiempo");
+    cont.innerHTML = `
+      <div class="mb-4 pb-2 border-b border-slate-100 flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-700">Flujo Procesal del Expediente</span>
+        <span class="text-[11px] text-slate-400">Progreso secuencial del caso</span>
+      </div>
+      <div class="timeline-flow">
+        ${etapas.map((e, idx) => {
+          const num = idx + 1;
+          const iconHtml = e.ok 
+            ? `<span class="material-symbols-outlined text-[15px] text-emerald-600">check</span>` 
+            : `<span class="text-[11px] font-bold text-slate-400">${num}</span>`;
+          const badgeCls = e.ok ? "ok" : "pend";
+          const badgeTxt = e.ok ? "Completado" : "Pendiente";
+          return `
+            <div class="flow-step ${e.ok ? "ok" : "pend"}">
+              <div class="flow-line"></div>
+              <div class="flow-node">${iconHtml}</div>
+              <div class="flow-card">
+                <div>
+                  <div class="flow-title">
+                    <span>${e.titulo}</span>
+                  </div>
+                  <div class="flow-meta mt-0.5">
+                    ${e.fecha ? `<span><span class="material-symbols-outlined text-[13px] align-middle">calendar_today</span> ${UTIL.fechaCorta(e.fecha)}</span>` : ""}
+                    ${e.doc ? `<span>• ${e.doc}</span>` : ""}
+                  </div>
+                </div>
+                <span class="flow-badge ${badgeCls}">${badgeTxt}</span>
+              </div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
   },
 
   async renderHistorial(caso) {
@@ -1548,10 +1973,32 @@ const DETALLE = {
       </div>`).join("");
   },
 
+  // Requerimiento 10: Alertas del caso compactas sin íconos gigantes
   renderAlertasCaso(caso) {
     const pendientes = ALERTAS.pendientesDeCaso(caso);
-    UTIL.qs("#tab-alertas-caso").innerHTML = pendientes.map(p =>
-      `<div class="alert-line ${p.ok ? "ok" : "pend"}">${p.ok ? ICONS.check : ICONS.alert} ${p.texto}</div>`).join("");
+    const cont = UTIL.qs("#tab-alertas-caso");
+    cont.innerHTML = `
+      <div class="mb-4 pb-2 border-b border-slate-100 flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-700">Checklist de Diligencias y Plazos</span>
+        <span class="text-[11px] text-slate-400">Estado de cumplimiento de requisitos</span>
+      </div>
+      <div>
+        ${pendientes.map(p => {
+          const iconHtml = p.ok 
+            ? `<span class="material-symbols-outlined text-[16px] text-emerald-600 shrink-0">check_circle</span>`
+            : `<span class="material-symbols-outlined text-[16px] text-amber-600 shrink-0">pending</span>`;
+          return `
+            <div class="alert-card-compact ${p.ok ? "ok" : "pend"}">
+              <div class="flex items-center gap-2.5">
+                ${iconHtml}
+                <span class="font-medium">${p.texto}</span>
+              </div>
+              <span class="flow-badge ${p.ok ? "ok" : "pend"}">${p.ok ? "Cumplido" : "Pendiente"}</span>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
   }
 };
 
@@ -1657,7 +2104,12 @@ const SEGUIMIENTO = {
         <td>${c.tecnico_responsable || "—"}</td><td>${c.estado_inspeccion || "—"}</td>
         <td>${UTIL.vacio(c.informe_inspeccion) ? "—" : "Sí"}</td><td>${UTIL.fechaCorta(c.fecha_informe)}</td>
         <td>${dias}</td>
-        <td><button class="btn btn-sm btn-secondary" data-id="${c.id}">Ver</button></td>
+        <td>
+          <button class="btn btn-sm btn-ver" data-id="${c.id}">
+            <span class="material-symbols-outlined text-[14px]">visibility</span>
+            <span>Ver</span>
+          </button>
+        </td>
       </tr>`;
     }).join("");
     UTIL.qsa("#tabla-seguimiento-body button").forEach(b => b.onclick = () => ROUTER.irADetalle(b.dataset.id));
@@ -1672,31 +2124,68 @@ const ALERTAS_VIEW = {
     await CASOS.fetchTodos();
     const r = ALERTAS.resumenGeneral(STATE.casosCache);
     const defs = [
-      { label: "Sin informe de atención", lista: r.sinInformeAtencion },
-      { label: "Con inspección pendiente", lista: r.inspeccionPendiente, tipo: "alerta" },
-      { label: "Inspecciones realizadas sin informe", lista: r.realizadasSinInforme, tipo: "critico" },
-      { label: "Sin medidas precautorias emitidas", lista: r.sinMedidasPrecautorias, tipo: "critico" }
+      { label: "Inspección pendiente (Prioridad Alta)", lista: r.inspeccionPendiente, tipo: "critico", desc: "Casos activos prioritarios pendientes de inspeccionar" },
+      { label: "Sin informe de atención", lista: r.sinInformeAtencion, tipo: "alerta", desc: "Casos sin informe de atención registrado" },
+      { label: "Inspecciones sin informe técnico", lista: r.realizadasSinInforme, tipo: "critico", desc: "Inspecciones de campo concluidas pendientes de informe" },
+      { label: "Sin medidas precautorias emitidas", lista: r.sinMedidasPrecautorias, tipo: "critico", desc: "Determinación de medidas aún sin resolución emitida" }
     ];
     UTIL.qs("#alertas-resumen-cards").innerHTML = defs.map((d, i) =>
-      `<div class="dash-card ${d.tipo || ""}" data-idx="${i}"><div class="num">${d.lista.length}</div><div class="label">${d.label}</div></div>`).join("");
+      `<div class="dash-card ${d.tipo || ""} cursor-pointer hover:shadow-md transition-all" data-idx="${i}">
+        <div class="num">${d.lista.length}</div>
+        <div class="label font-bold text-xs">${d.label}</div>
+        <div class="text-[10px] text-slate-400 mt-1">${d.desc}</div>
+      </div>`).join("");
     UTIL.qsa("#alertas-resumen-cards .dash-card").forEach((el, i) => {
       el.onclick = () => ALERTAS_VIEW.pintarListado(defs[i].label, defs[i].lista);
     });
-    ALERTAS_VIEW.pintarListado(null, STATE.casosCache.filter(c => c.estado_global === "PROCESO EN CURSO" && ALERTAS.pendientesDeCaso(c).some(p => !p.ok)));
+
+    if (r.inspeccionPendiente.length > 0) {
+      ALERTAS_VIEW.pintarListado("Inspección pendiente (Prioridad Alta)", r.inspeccionPendiente);
+    } else {
+      ALERTAS_VIEW.pintarListado(null, STATE.casosCache.filter(c => c.estado_global === "PROCESO EN CURSO" && ALERTAS.pendientesDeCaso(c).some(p => !p.ok)));
+    }
   },
 
   pintarListado(titulo, lista) {
     const cont = UTIL.qs("#alertas-listado");
-    cont.innerHTML = `<h3>${titulo || "Casos con pendientes"}</h3>` + (lista.length === 0
-      ? `<p class="hint-text">No hay casos en esta categoría.</p>`
-      : lista.map(c => {
-          const pend = ALERTAS.pendientesDeCaso(c).filter(p => !p.ok);
-          return `<div class="hist-item">
-            <b>${c.id_inspec}</b> — ${c.nombre_predio || c.hoja_de_ruta || "—"}
-            <button class="btn btn-sm btn-secondary" style="float:right" data-id="${c.id}">Ver caso</button>
-            <div class="hist-meta">${pend.map(p => p.texto).join(" · ")}</div>
-          </div>`;
-        }).join(""));
+    cont.innerHTML = `
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900">${titulo || "Casos con diligencias pendientes"}</h3>
+        <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">${lista.length} expedientes</span>
+      </div>
+      <div class="space-y-2.5">
+        ${lista.length === 0
+          ? `<div class="p-6 text-center text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+              <span class="material-symbols-outlined text-emerald-600 text-2xl mb-1">check_circle</span>
+              <p class="text-xs font-medium text-slate-600">No hay casos en esta categoría de alerta.</p>
+            </div>`
+          : lista.map(c => {
+              const pend = ALERTAS.pendientesDeCaso(c).filter(p => !p.ok);
+              const esAlta = (c.prioridad || "").trim().toUpperCase() === "ALTA";
+              return `
+                <div class="p-3.5 rounded-lg border ${esAlta ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200 bg-white'} shadow-2xs hover:border-slate-300 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div class="space-y-1 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="font-mono font-bold text-xs px-1.5 py-0.5 rounded ${esAlta ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-800'}">${c.id_inspec}</span>
+                      <span class="font-bold text-slate-900 text-xs">${c.nombre_predio || "—"}</span>
+                      <span class="text-[11px] text-slate-400">(${c.departamento || "—"} - ${c.municipio || "—"})</span>
+                      ${LISTADO.badgePrioridad(c.prioridad)}
+                      <span class="badge badge-curso text-[10px]">${c.estado_actual}</span>
+                    </div>
+                    <div class="text-[11px] text-slate-600 flex flex-wrap gap-1.5 pt-0.5">
+                      ${pend.map(p => `<span class="inline-flex items-center gap-1 text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>${p.texto}</span>`).join("")}
+                    </div>
+                  </div>
+                  <button class="btn btn-sm btn-ver shrink-0" data-id="${c.id}">
+                    <span class="material-symbols-outlined text-[14px]">visibility</span>
+                    <span>Ver caso</span>
+                  </button>
+                </div>
+              `;
+            }).join("")
+        }
+      </div>
+    `;
     UTIL.qsa("#alertas-listado button[data-id]").forEach(b => b.onclick = () => ROUTER.irADetalle(b.dataset.id));
   }
 };
