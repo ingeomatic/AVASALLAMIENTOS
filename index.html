@@ -242,7 +242,7 @@
 
 
         <!-- FILA 2: INDICADORES OPERATIVOS (3 tarjetas visibles) -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="dashboard-cards-fila2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="dashboard-cards-fila2">
           <!-- Generado dinámicamente por DASHBOARD.renderTarjetas() -->
         </div>
 
@@ -290,34 +290,145 @@
         </div>
 
 
-        <!-- FILA 5: ANÁLISIS POR CLASIFICACIÓN Y DEPARTAMENTO -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- 1. CASOS POR CLASIFICACIÓN -->
-          <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
-            <div class="pb-3 border-b border-slate-100">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">CASOS POR CLASIFICACIÓN</h3>
-            </div>
-            <div class="dashboard-pie-widget" id="dashboard-clasificacion-widget">
-              <!-- Render dinámico -->
-            </div>
-            <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-400">
-              Clasificación de denuncias y actividades antrópicas
-            </div>
-          </div>
+        <!-- ============================================================
+     FILA 5: TOTAL DE CASOS POR DEPARTAMENTO
+     HISTOGRAMA + TORTA
+     ============================================================ -->
 
-          <!-- 2. TOTAL DE CASOS POR DEPARTAMENTO -->
-          <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
-            <div class="pb-3 border-b border-slate-100">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">TOTAL DE CASOS POR DEPARTAMENTO</h3>
-            </div>
-            <div class="dashboard-pie-widget" id="dashboard-departamento-widget">
-              <!-- Render dinámico -->
-            </div>
-            <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-400" id="dashboard-depto-footer">
-              Distribución territorial nacional
-            </div>
-          </div>
-        </div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <!-- HISTOGRAMA DEPARTAMENTOS -->
+
+  <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+
+    <div class="pb-4 border-b border-slate-100">
+
+      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">
+        TOTAL DE CASOS POR DEPARTAMENTO
+      </h3>
+
+      <p class="text-[11px] text-slate-400 mt-0.5">
+        Distribución territorial de expedientes
+      </p>
+
+    </div>
+
+    <div
+      class="mt-5 space-y-1 max-h-[520px] overflow-y-auto pr-2"
+      id="dashboard-departamento-histograma"
+    >
+      <!-- Histograma horizontal generado dinámicamente -->
+    </div>
+
+    <div class="pt-4 mt-4 border-t border-slate-100 text-[11px] text-slate-400">
+      Los departamentos están ordenados de mayor a menor cantidad de casos.
+    </div>
+
+  </div>
+
+
+  <!-- TORTA DEPARTAMENTOS -->
+
+  <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+
+    <div class="pb-4 border-b border-slate-100">
+
+      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">
+        TOTAL DE CASOS POR DEPARTAMENTO
+      </h3>
+
+      <p class="text-[11px] text-slate-400 mt-0.5">
+        Distribución porcentual por departamento
+      </p>
+
+    </div>
+
+    <div
+      class="mt-4"
+      id="dashboard-departamento-pie"
+    >
+      <!-- Torta generada dinámicamente -->
+    </div>
+
+    <div
+      class="pt-4 border-t border-slate-100 text-[11px] text-slate-400"
+      id="dashboard-depto-footer"
+    >
+      Distribución territorial nacional
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ============================================================
+     FILA 6: CASOS POR CLASIFICACIÓN
+     HISTOGRAMA + TORTA
+     ============================================================ -->
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <!-- HISTOGRAMA CLASIFICACIÓN -->
+
+  <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+
+    <div class="pb-4 border-b border-slate-100">
+
+      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">
+        CASOS POR CLASIFICACIÓN
+      </h3>
+
+      <p class="text-[11px] text-slate-400 mt-0.5">
+        Cantidad de casos según clasificación
+      </p>
+
+    </div>
+
+    <div
+      class="mt-5 space-y-1 max-h-[520px] overflow-y-auto pr-2"
+      id="dashboard-clasificacion-histograma"
+    >
+      <!-- Histograma horizontal generado dinámicamente -->
+    </div>
+
+    <div class="pt-4 mt-4 border-t border-slate-100 text-[11px] text-slate-400">
+      Las clasificaciones están ordenadas de mayor a menor cantidad.
+    </div>
+
+  </div>
+
+
+  <!-- TORTA CLASIFICACIÓN -->
+
+  <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+
+    <div class="pb-4 border-b border-slate-100">
+
+      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">
+        CASOS POR CLASIFICACIÓN
+      </h3>
+
+      <p class="text-[11px] text-slate-400 mt-0.5">
+        Distribución porcentual de las clasificaciones
+      </p>
+
+    </div>
+
+    <div
+      class="mt-4"
+      id="dashboard-clasificacion-pie"
+    >
+      <!-- Torta generada dinámicamente -->
+    </div>
+
+    <div class="pt-4 border-t border-slate-100 text-[11px] text-slate-400">
+      Clasificación de denuncias y actividades antrópicas
+    </div>
+
+  </div>
+
+</div>
 
 
         <!-- ÚLTIMOS REGISTROS & PRIORIDAD ALTA -->
