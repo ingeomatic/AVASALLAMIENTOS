@@ -221,14 +221,14 @@
               </h2>
               <p class="text-xs text-slate-400 mt-0.5">Distribución de casos según fase procesal actual</p>
             </div>
-            <div class="flex items-center gap-4 text-xs">
-              <div class="flex items-center gap-1.5">
-                <span class="w-3 h-3 rounded-sm bg-[#0f392b]"></span>
-                <span class="text-slate-600 font-medium">En Curso</span>
+            <div class="flex items-center gap-4 text-xs font-semibold">
+              <div class="flex items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200">
+                <span class="w-3.5 h-3.5 rounded-sm bg-emerald-600 shadow-sm"></span>
+                <span class="text-emerald-900 font-bold uppercase tracking-wider text-[11px]">En Curso (Activo)</span>
               </div>
-              <div class="flex items-center gap-1.5">
-                <span class="w-3 h-3 rounded-sm bg-slate-500"></span>
-                <span class="text-slate-600 font-medium">Concluido</span>
+              <div class="flex items-center gap-2 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200">
+                <span class="w-3.5 h-3.5 rounded-sm bg-slate-700 shadow-sm"></span>
+                <span class="text-slate-800 font-bold uppercase tracking-wider text-[11px]">Concluido (Cerrado)</span>
               </div>
             </div>
           </div>
@@ -237,8 +237,8 @@
           </div>
         </div>
 
-        <!-- FILA INFERIOR: 3 MÓDULOS DE ANÁLISIS TERRITORIAL -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- FILA 3: 2 MÓDULOS DE ANÁLISIS TERRITORIAL -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- 1. CASOS POR CLASIFICACIÓN -->
           <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
             <div class="pb-3 border-b border-slate-100">
@@ -264,30 +264,42 @@
               Distribución territorial nacional
             </div>
           </div>
+        </div>
 
-          <!-- 3. CASOS POR GESTIÓN -->
-          <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
-            <div class="pb-3 border-b border-slate-100">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">CASOS POR GESTIÓN</h3>
+        <!-- FILA 4: HISTÓRICO ANUAL (CASOS POR GESTIÓN EN FILA COMPLETA) -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between pb-4 border-b border-slate-100 gap-2">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">CASOS POR GESTIÓN (HISTÓRICO ANUAL)</h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">Volumen y evolución cronológica de expedientes por año de registro</p>
             </div>
-            <div class="my-5" id="dashboard-gestion-widget">
-              <!-- Render dinámico -->
-            </div>
-            <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-400" id="dashboard-gestion-footer">
+            <div class="text-[11px] font-medium text-slate-500 bg-slate-50 px-3 py-1 rounded-md border border-slate-200" id="dashboard-gestion-footer">
               Histórico anual de registros
             </div>
+          </div>
+          <div class="my-4 overflow-x-auto" id="dashboard-gestion-widget">
+            <!-- Render dinámico y espacioso en fila completa -->
           </div>
         </div>
 
         <!-- ÚLTIMOS REGISTROS & PRIORIDAD ALTA -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900 mb-4">Últimos Registros</h3>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900">Últimos Registros</h3>
+              <span class="text-[11px] font-semibold text-slate-400">Recientes</span>
+            </div>
             <div id="dashboard-ultimos-registros" class="overflow-x-auto"></div>
           </div>
 
           <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900 mb-4">Prioridad Alta (En Curso)</h3>
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900">Prioridad Alta (En Curso)</h3>
+              </div>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase">Urgente</span>
+            </div>
             <div id="dashboard-prioridad-alta" class="overflow-x-auto"></div>
           </div>
         </div>
@@ -317,82 +329,52 @@
           <button class="text-amber-800 underline font-semibold hover:text-amber-950 cursor-pointer" id="btn-clear-filter">Quitar filtro</button>
         </div>
 
-        <!-- BARRA DE FILTROS -->
+        <!-- BARRA DE FILTROS 100% DINÁMICOS -->
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-2.5" id="filters-bar">
           <input type="text" id="filtro-texto" placeholder="Buscar por ID, hoja de ruta, predio, denunciante..." class="flex-1 min-w-[220px] rounded-lg border-slate-200 text-xs placeholder-slate-400 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]">
           <select id="filtro-departamento" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]"><option value="">Departamento</option></select>
           <select id="filtro-provincia" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]"><option value="">Provincia</option></select>
           <select id="filtro-municipio" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]"><option value="">Municipio</option></select>
-          
-          <!-- Tipo de Propiedad corregido: Tierra Fiscal, Comunidad, Otros -->
-          <select id="filtro-tipo-propiedad" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]">
-            <option value="">Tipo de propiedad</option>
-            <option value="TIERRA FISCAL">Tierra Fiscal</option>
-            <option value="COMUNIDAD">Comunidad</option>
-            <option value="OTROS">Otros</option>
-          </select>
-
-          <!-- Clasificación corregida -->
-          <select id="filtro-clasificacion" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]">
-            <option value="">Clasificación</option>
-            <option value="DENUNCIA DE AVASALLAMIENTO">Denuncia de Avasallamiento</option>
-            <option value="IDENTIFICACION DE ACTIVIDAD ANTROPICA">Identificación de Actividad Antrópica</option>
-            <option value="OTROS">Otros</option>
-          </select>
-
-          <select id="filtro-prioridad" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]">
-            <option value="">Prioridad</option>
-            <option value="ALTA">Alta</option>
-            <option value="MEDIA">Media</option>
-            <option value="BAJA">Baja</option>
-          </select>
-
-          <select id="filtro-estado-global" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]">
-            <option value="">Estado global</option>
-            <option value="PROCESO EN CURSO">Proceso en curso</option>
-            <option value="PROCESO CONCLUIDO">Proceso concluido</option>
-          </select>
-
-          <select id="filtro-estado-actual" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]">
-            <option value="">Estado actual</option>
-          </select>
-
-          <select id="filtro-estado-inspeccion" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]">
-            <option value="">Estado de inspección</option>
-            <option value="PENDIENTE DE INSPECCION">Pendiente de inspección</option>
-            <option value="PROGRAMADA">Programada</option>
-            <option value="INSPECCIONADO">Inspeccionado</option>
-          </select>
-
-          <select id="filtro-accion" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]">
-            <option value="">Acción a seguir</option>
-            <option value="PROSEGUIR CON EL PROCESO DE DOTACION">Proseguir con el proceso de dotación</option>
-            <option value="MEDIDAS PRECAUTORIAS">Medidas precautorias</option>
-            <option value="DESESTIMAR LA DENUNCIA">Desestimar la denuncia</option>
-            <option value="POR DETERMINAR">Por determinar</option>
-            <option value="REPROGRAMAR INSPECCION">Reprogramar inspección</option>
-            <option value="SIN DEFINIR">Sin definir</option>
-          </select>
-
+          <select id="filtro-tipo-propiedad" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]"><option value="">Tipo de propiedad</option></select>
+          <select id="filtro-clasificacion" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]"><option value="">Clasificación</option></select>
+          <select id="filtro-prioridad" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]"><option value="">Prioridad</option></select>
+          <select id="filtro-estado-global" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]"><option value="">Estado global</option></select>
+          <select id="filtro-estado-actual" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]"><option value="">Estado actual</option></select>
+          <select id="filtro-estado-inspeccion" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]"><option value="">Estado de inspección</option></select>
+          <select id="filtro-accion" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]"><option value="">Acción a seguir</option></select>
           <input type="number" id="filtro-gestion" placeholder="Gestión" class="w-24 rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]">
           <button class="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer transition-colors" id="btn-reset-filtros">Limpiar</button>
         </div>
 
-        <!-- TABLA DE CASOS -->
-        <div class="table-wrap">
-          <table class="data-table" id="tabla-casos">
-            <thead>
-              <tr>
-                <th>NRO</th><th>ID_INSPEC</th><th>Hoja de Ruta</th><th>F. Ingreso</th><th>Gestión</th>
-                <th>Depto</th><th>Prov</th><th>Municipio</th><th>Predio</th><th>Tipo Propiedad</th>
-                <th>Clasificación</th><th>Denunciante</th><th>Prioridad</th><th>Estado Global</th>
-                <th>Estado Actual</th><th>Estado Inspección</th><th>Acción a Seguir</th><th>Usuario</th>
-                <th>Actualizado</th><th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-casos-body"></tbody>
-          </table>
+        <!-- CONTENEDOR CON SCROLL HORIZONTAL ACCESIBLE Y PERMANENTE -->
+        <div class="table-scroll-container">
+          <!-- Barra de scroll superior sincronizada (siempre visible arriba de la tabla) -->
+          <div class="table-scroll-top" id="tabla-casos-scroll-top" title="Desplazamiento horizontal superior">
+            <div class="table-scroll-top-inner" id="tabla-casos-scroll-top-inner"></div>
+          </div>
+
+          <!-- Tabla de casos principal -->
+          <div class="table-wrap" id="tabla-casos-wrap">
+            <table class="data-table" id="tabla-casos">
+              <thead>
+                <tr>
+                  <th>NRO</th><th>ID_INSPEC</th><th>Hoja de Ruta</th><th>F. Ingreso</th><th>Gestión</th>
+                  <th>Depto</th><th>Prov</th><th>Municipio</th><th>Predio</th><th>Tipo Propiedad</th>
+                  <th>Clasificación</th><th>Denunciante</th><th>Prioridad</th><th>Estado Global</th>
+                  <th>Estado Actual</th><th>Estado Inspección</th><th>Acción a Seguir</th><th>Usuario</th>
+                  <th>Actualizado</th><th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-casos-body"></tbody>
+            </table>
+          </div>
+
+          <!-- Barra de scroll flotante inferior sincronizada (visible mientras la tabla esté en pantalla) -->
+          <div class="table-scroll-floating" id="tabla-casos-scroll-floating" title="Desplazamiento horizontal flotante">
+            <div class="table-scroll-floating-inner" id="tabla-casos-scroll-floating-inner"></div>
+          </div>
         </div>
+
         <div id="listado-vacio" class="empty-state hidden">No hay casos que coincidan con los filtros aplicados.</div>
       </section>
 
