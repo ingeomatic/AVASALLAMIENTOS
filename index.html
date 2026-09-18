@@ -1568,220 +1568,199 @@
 
             </div>
           </div>
-          <!-- PARTE 3: MEDIDAS PRECAUTORIAS Y SEGUIMIENTO -->
-          <div class="parte-block" id="bloque-parte3">
-            <div class="parte-header" data-toggle="parte3-body">
-              <h3>Parte 3 · Medidas Precautorias y Seguimiento</h3>
-              <div class="progress-mini"><div class="progress-fill" id="progreso-parte3"></div></div>
-              <span class="parte-estado" id="estado-parte3">NO APLICA</span>
+                    <div class="table-scroll-floating" id="tabla-casos-scroll-floating" title="Desplazamiento horizontal flotante">
+            <div class="table-scroll-floating-inner" id="tabla-casos-scroll-floating-inner"></div>
+          </div>
+        </div>
+
+        <div id="listado-vacio" class="empty-state hidden">No hay casos que coincidan con los filtros aplicados.</div>
+      </section>
+
+      <!-- ===================== SECCIÓN DETALLE ===================== -->
+      <section id="section-detalle" class="section-panel hidden">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Detalle del caso</div>
+            <h2 class="text-lg font-bold text-slate-900" id="detalle-titulo">Caso</h2>
+          </div>
+          <button
+            id="btn-volver-listado"
+            class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            ← Volver al listado
+          </button>
+        </div>
+
+        <div id="detalle-contenido"></div>
+      </section>
+
+      <!-- ===================== SECCIÓN MAPA ===================== -->
+      <section id="section-mapa" class="section-panel hidden">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-5 border-b border-slate-100">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Visualización territorial</div>
+            <h2 class="text-lg font-bold text-slate-900 mt-1">Mapa de casos</h2>
+            <p class="text-[11px] text-slate-400 mt-1">Distribución geográfica de los casos registrados.</p>
+          </div>
+
+          <div id="mapa-container" class="relative min-h-[520px] bg-slate-100">
+            <div id="mapa" class="w-full h-[520px]"></div>
+            <div
+              id="mapa-cargando"
+              class="absolute inset-0 flex items-center justify-center bg-white/80 text-xs text-slate-500 hidden"
+            >
+              Cargando mapa...
             </div>
-            <div class="parte-body" id="parte3-body">
-              <p class="hint-text" id="parte3-hint">Esta sección se habilita cuando la Acción a Seguir es "Medidas Precautorias".</p>
-              <div class="field-grid">
-                <label>Res. Medidas Precautorias <input data-campo="res_medidas_precautorias" type="text"></label>
-                <label>Fecha Resolución <input data-campo="fecha_resolucion_medidas" type="date"></label>
-                <label>Inf. Medidas Precautorias <input data-campo="inf_medidas_precautorias" type="text"></label>
-                <label>Fecha Informe Medidas Precautorias <input data-campo="fecha_informe_medidas" type="date"></label>
-                <label>Nota Remisión Medidas Precautorias <input data-campo="nota_remision_medidas" type="text"></label>
-                <label>Fecha Nota <input data-campo="fecha_nota" type="date"></label>
-                <label>Intimación <input data-campo="intimacion" type="text"></label>
-                <label>Fecha Intimación <input data-campo="fecha_intimacion" type="date"></label>
-                <label>Notificación de Intimación <input data-campo="notificacion_intimacion" type="text"></label>
-                <label>Informe de Verificación de Intimación <input data-campo="informe_verificacion_intimacion" type="text"></label>
-                <label>Fecha Informe de Verificación <input data-campo="fecha_informe_verificacion" type="date"></label>
-                <label class="full">Estado / Conclusión de la Verificación
-                  <textarea data-campo="estado_verificacion" id="form-estado-verificacion" placeholder="Conclusiones o estado de la verificación..."></textarea>
-                </label>
-                <label class="full">Detalle de la Verificación <textarea data-campo="detalle_verificacion"></textarea></label>
-                <label>Carta al Comando <input data-campo="carta_comando" type="text"></label>
-                <label>Fecha Carta al Comando <input data-campo="fecha_carta_comando" type="date"></label>
-                <label>Informe / Acta de Desalojo <input data-campo="informe_acta_desalojo" type="text"></label>
-                <label>Fecha Desalojo <input data-campo="fecha_desalojo" type="date"></label>
-                <label class="full">Observaciones <textarea data-campo="observaciones_parte3"></textarea></label>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== SECCIÓN REPORTES ===================== -->
+      <section id="section-reportes" class="section-panel hidden">
+        <div class="mb-5">
+          <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Reportes</div>
+          <h2 class="text-lg font-bold text-slate-900">Generación de reportes</h2>
+          <p class="text-[11px] text-slate-400 mt-1">
+            Seleccione los parámetros para generar el reporte correspondiente.
+          </p>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                Departamento
+              </label>
+              <select
+                id="reporte-departamento"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-slate-400"
+              >
+                <option value="">Todos</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                Estado actual
+              </label>
+              <select
+                id="reporte-estado"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-slate-400"
+              >
+                <option value="">Todos</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                Clasificación
+              </label>
+              <select
+                id="reporte-clasificacion"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-slate-400"
+              >
+                <option value="">Todas</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                Tipo de reporte
+              </label>
+              <select
+                id="reporte-tipo"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-slate-400"
+              >
+                <option value="general">Reporte general</option>
+                <option value="departamento">Por departamento</option>
+                <option value="clasificacion">Por clasificación</option>
+                <option value="estado">Por estado actual</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-2 mt-5 pt-5 border-t border-slate-100">
+            <button
+              id="btn-generar-reporte"
+              class="px-4 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800"
+            >
+              Generar reporte
+            </button>
+
+            <button
+              id="btn-exportar-reporte"
+              class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50"
+            >
+              Exportar
+            </button>
+          </div>
+
+          <div id="reporte-resultado" class="mt-6 hidden"></div>
+        </div>
+      </section>
+
+      <!-- ===================== SECCIÓN CONFIGURACIÓN ===================== -->
+      <section id="section-configuracion" class="section-panel hidden">
+        <div class="mb-5">
+          <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Configuración</div>
+          <h2 class="text-lg font-bold text-slate-900">Configuración del sistema</h2>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">
+              Preferencias de visualización
+            </h3>
+
+            <div class="space-y-4 mt-5">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <div class="text-xs font-semibold text-slate-700">Mostrar información adicional</div>
+                  <div class="text-[11px] text-slate-400">Muestra información complementaria en los paneles.</div>
+                </div>
+                <input
+                  type="checkbox"
+                  id="config-info-adicional"
+                  class="h-4 w-4 rounded border-slate-300"
+                />
+              </div>
+
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <div class="text-xs font-semibold text-slate-700">Actualizar automáticamente</div>
+                  <div class="text-[11px] text-slate-400">Actualiza los datos del dashboard automáticamente.</div>
+                </div>
+                <input
+                  type="checkbox"
+                  id="config-auto-refresh"
+                  class="h-4 w-4 rounded border-slate-300"
+                />
               </div>
             </div>
           </div>
 
-          <div class="form-actions">
-            <span id="form-completitud" class="text-xs font-semibold text-[#0f392b]">Completitud del caso: 0%</span>
-            <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-white bg-[#0f392b] hover:bg-[#164e3b] shadow-md cursor-pointer transition-all" id="btn-guardar-flotante">
-              <span class="material-symbols-outlined text-[18px]">save</span>
-              Guardar Cambios
-            </button>
-          </div>
-        </form>
-      </section>
+          <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">
+              Información del sistema
+            </h3>
 
-      <!-- ===================== DETALLE DE CASO ===================== -->
-      <section id="view-detalle" class="view space-y-5">
-        <div class="flex items-center justify-between pb-2">
-          <div>
-            <h2 class="text-xl font-bold text-slate-900">Detalle del Caso</h2>
-            <p class="text-xs text-slate-500">Expediente completo y trazabilidad de acciones</p>
-          </div>
-          <div class="flex items-center gap-2.5">
-            <button class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer shadow-sm" id="btn-detalle-volver">
-              <span class="material-symbols-outlined text-[16px]">arrow_back</span>
-              Volver
-            </button>
-            <button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-[#0f392b] hover:bg-[#164e3b] cursor-pointer shadow-sm" id="btn-detalle-editar">
-              <span class="material-symbols-outlined text-[16px]">edit</span>
-              Editar Caso
-            </button>
-          </div>
-        </div>
+            <div class="space-y-3 mt-5">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-slate-400">Versión</span>
+                <span class="text-xs font-semibold text-slate-700" id="config-version">1.0</span>
+              </div>
 
-        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-wrap gap-6 items-center" id="detalle-header"></div>
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-slate-400">Última actualización</span>
+                <span class="text-xs font-semibold text-slate-700" id="config-actualizacion">—</span>
+              </div>
 
-        <div class="tabs">
-          <button class="tab-btn active" data-tab="tab-resumen">Resumen</button>
-          <button class="tab-btn" data-tab="tab-linea-tiempo">Línea de Tiempo</button>
-          <button class="tab-btn" data-tab="tab-historial">Historial de Cambios</button>
-          <button class="tab-btn" data-tab="tab-alertas-caso">Alertas del Caso</button>
-        </div>
-
-        <div id="tab-resumen" class="tab-panel active space-y-4"></div>
-        <div id="tab-linea-tiempo" class="tab-panel bg-white p-6 rounded-xl border border-slate-200 shadow-sm"></div>
-        <div id="tab-historial" class="tab-panel bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-2"></div>
-        <div id="tab-alertas-caso" class="tab-panel bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-2"></div>
-      </section>
-
-      <!-- ===================== SEGUIMIENTO DE INSPECCIONES ===================== -->
-      <section id="view-seguimiento" class="view space-y-5">
-        <div>
-          <h2 class="text-xl font-bold text-slate-900">Seguimiento de Inspecciones</h2>
-          <p class="text-xs text-slate-500">Control operativo de campo e informes técnicos</p>
-        </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-6 gap-3.5" id="seguimiento-cards"></div>
-
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-2.5">
-          <input type="number" id="seg-filtro-gestion" placeholder="Gestión" class="w-24 rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]">
-          <input type="number" id="seg-filtro-mes" min="1" max="12" placeholder="Mes (1-12)" class="w-28 rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]">
-          <select id="seg-filtro-departamento" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]"><option value="">Departamento</option></select>
-          <input type="text" id="seg-filtro-tecnico" placeholder="Técnico responsable" class="flex-1 min-w-[180px] rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]">
-          
-          <select id="seg-filtro-estado" class="rounded-lg border-slate-200 text-xs text-slate-700 focus:border-[#0f392b] focus:ring-1 focus:ring-[#0f392b]">
-            <option value="">Estado</option>
-            <option value="PENDIENTE DE INSPECCION">Pendiente de inspección</option>
-            <option value="PROGRAMADA">Programada</option>
-            <option value="INSPECCIONADO">Inspeccionado</option>
-          </select>
-          <button class="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer" id="btn-seg-reset">Limpiar</button>
-        </div>
-
-        <div class="table-wrap">
-          <table class="data-table" id="tabla-seguimiento">
-            <thead>
-              <tr>
-                <th>ID_INSPEC</th><th>Caso / Predio</th><th>Depto</th><th>Municipio</th>
-                <th>F. Programada</th><th>F. Real</th><th>Técnico</th><th>Estado</th>
-                <th>Informe</th><th>F. Informe</th><th>Días Transcurridos</th><th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-seguimiento-body"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- ===================== ALERTAS Y PENDIENTES ===================== -->
-      <section id="view-alertas" class="view space-y-5">
-        <div>
-          <h2 class="text-xl font-bold text-slate-900">Alertas y Pendientes</h2>
-          <p class="text-xs text-slate-500">Atención de plazos y diligencias rezagadas</p>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="alertas-resumen-cards"></div>
-        <div id="alertas-listado" class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-3"></div>
-      </section>
-
-      <!-- ===================== SOLICITUDES DE CAMBIO (ADMIN) ===================== -->
-      <section id="view-solicitudes" class="view space-y-4">
-        <div>
-          <h2 class="text-xl font-bold text-slate-900">Solicitudes de Cambio</h2>
-          <p class="text-xs text-slate-500">Aprobación y autorización de modificaciones a datos protegidos</p>
-        </div>
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <label class="text-xs font-semibold text-slate-600">Filtrar por estado:</label>
-          <select id="sol-filtro-estado" class="rounded-lg border-slate-200 text-xs text-slate-700">
-            <option value="PENDIENTE">Pendientes</option>
-            <option value="APROBADO">Aprobadas</option>
-            <option value="RECHAZADO">Rechazadas</option>
-            <option value="">Todas</option>
-          </select>
-        </div>
-        <div class="table-wrap">
-          <table class="data-table" id="tabla-solicitudes">
-            <thead>
-              <tr>
-                <th>Caso</th><th>Campo</th><th>Valor Anterior</th><th>Valor Propuesto</th>
-                <th>Solicitante</th><th>Fecha</th><th>Motivo</th><th>Estado</th><th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-solicitudes-body"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- ===================== GESTIÓN DE USUARIOS (ADMIN) ===================== -->
-      <section id="view-usuarios" class="view space-y-4">
-        <div>
-          <h2 class="text-xl font-bold text-slate-900">Gestión de Usuarios</h2>
-          <p class="text-xs text-slate-500">Administración de perfiles y roles del personal institucional</p>
-        </div>
-        <div class="table-wrap">
-          <table class="data-table" id="tabla-usuarios">
-            <thead>
-              <tr><th>Nombre Completo</th><th>Rol</th><th>Creado</th><th>Acciones</th></tr>
-            </thead>
-            <tbody id="tabla-usuarios-body"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- ===================== IMPORTACIÓN / EXPORTACIÓN (ADMIN) ===================== -->
-      <section id="view-importacion" class="view space-y-6">
-        <div>
-          <h2 class="text-xl font-bold text-slate-900">Importación y Exportación</h2>
-          <p class="text-xs text-slate-500">Herramientas de carga masiva de expedientes y catálogos territoriales</p>
-        </div>
-
-        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-3">
-          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900">Importar Datos Históricos (CSV)</h3>
-          <p class="text-xs text-slate-500">Archivo delimitado por punto y coma (";") con codificación UTF-8 o Windows-1252.</p>
-          <div class="flex flex-wrap items-center gap-3 pt-2">
-            <input type="file" id="input-csv" accept=".csv" class="text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
-            <button class="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-[#0f392b] hover:bg-[#164e3b] disabled:opacity-50 cursor-pointer shadow-sm" id="btn-importar-csv" disabled>Importar Casos</button>
-          </div>
-          <div id="import-resultado" class="hidden p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-1"></div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
-          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900">Catálogo Territorial (Departamentos, Provincias y Municipios)</h3>
-          <p class="text-xs text-slate-500">Columnas esperadas: departamento;provincia;municipio</p>
-          <div class="flex flex-wrap items-center gap-3">
-            <input type="file" id="input-csv-territorios" accept=".csv" class="text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
-            <button class="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-[#0f392b] hover:bg-[#164e3b] disabled:opacity-50 cursor-pointer shadow-sm" id="btn-importar-territorios" disabled>Importar Catálogo</button>
-          </div>
-          <div id="import-territorios-resultado" class="hidden p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs"></div>
-
-          <div class="pt-4 border-t border-slate-100">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Agregar unidad territorial manualmente</h4>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <input type="text" id="terr-manual-dep" placeholder="Departamento (ej. SANTA CRUZ)" class="rounded-lg border-slate-200 text-xs">
-              <input type="text" id="terr-manual-prov" placeholder="Provincia (ej. CHIQUITOS)" class="rounded-lg border-slate-200 text-xs">
-              <input type="text" id="terr-manual-mun" placeholder="Municipio (ej. SAN JOSE)" class="rounded-lg border-slate-200 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-slate-400">Registros cargados</span>
+                <span class="text-xs font-semibold text-slate-700" id="config-registros">0</span>
+              </div>
             </div>
-            <button class="mt-3 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer shadow-sm" id="btn-agregar-territorio">Agregar Unidad</button>
           </div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-3">
-          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900">Exportación de Datos</h3>
-          <p class="text-xs text-slate-500">Descarga un respaldo completo en formato CSV compatible con Excel.</p>
-          <button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer shadow-sm" id="btn-exportar-csv">
-            <span class="material-symbols-outlined text-[18px]">download</span>
-            Exportar Todos los Casos a CSV
-          </button>
         </div>
       </section>
 
