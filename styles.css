@@ -11,6 +11,17 @@
   --brand-600: #1e634b;
   --brand-500: #2d7a5d;
   --brand-100: #d1fae5;
+}
+
+/* ---------- RESET & BODY ---------- */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
+}
+
 /* ---------- ICONOS SVG ---------- */
 .icon {
   width: 16px;
@@ -33,13 +44,6 @@
   height: 20px;
   min-width: 20px;
   min-height: 20px;
-}
-
-  margin: 0;
-  padding: 0;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: #f8fafc;
-  color: #1e293b;
 }
 
 /* ---------- VISTAS & ROUTING ---------- */
@@ -90,9 +94,9 @@
 
 .data-table {
   border-collapse: collapse;
+  table-layout: fixed;
   width: 100%;
   font-size: 0.78rem;
-  white-space: nowrap;
 }
 
 .data-table th, .data-table td {
@@ -116,6 +120,53 @@
 
 .data-table tbody tr:hover {
   background-color: #f8fafc;
+}
+
+/* ---- Anchos equilibrados tabla de CASOS (9 columnas exactas, sin scroll horizontal) ---- */
+#tabla-casos {
+  table-layout: fixed;
+  width: 100%;
+}
+#tabla-casos col.col-id        { width: 80px; }
+#tabla-casos col.col-ruta      { width: 13%; }
+#tabla-casos col.col-depto     { width: 11%; }
+#tabla-casos col.col-predio    { width: 23%; }
+#tabla-casos col.col-prioridad { width: 80px; }
+#tabla-casos col.col-actual    { width: 18%; }
+#tabla-casos col.col-global    { width: 120px; }
+#tabla-casos col.col-usuario   { width: 115px; }
+#tabla-casos col.col-acciones  { width: 65px; }
+
+/* ---- Anchos equilibrados tabla SEGUIMIENTO (5 columnas proporcionadas, sin scroll) ---- */
+#tabla-seguimiento {
+  table-layout: fixed;
+  width: 100%;
+}
+#tabla-seguimiento col.col-seg-id     { width: 95px; }
+#tabla-seguimiento col.col-seg-predio { width: 38%; }
+#tabla-seguimiento col.col-seg-depto  { width: 18%; }
+#tabla-seguimiento col.col-seg-estado { width: 220px; }
+#tabla-seguimiento col.col-seg-acc    { width: 75px; }
+
+#tabla-seguimiento td .badge {
+  white-space: nowrap;
+  display: inline-flex;
+}
+
+/* Celdas con texto truncado sin romper tabla */
+.td-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 0;
+}
+
+/* Tablas principales ocupan el ancho del contenedor sin desborde horizontal */
+#tabla-casos-wrap {
+  overflow-x: hidden;
+}
+.table-wrap {
+  overflow-x: auto;
 }
 
 /* ---------- BOTONES INSTITUCIONALES Y DE ACCIÓN ---------- */
@@ -644,6 +695,84 @@
   font-style: italic;
 }
 
+/* Colores distintivos para las 6 partes del Detalle del Caso */
+.resumen-seccion.seccion-parte1 {
+  border-left: 4px solid #2563eb;
+  border-top: 1px solid #bfdbfe;
+}
+.resumen-seccion.seccion-parte1 .resumen-seccion-titulo {
+  color: #1d4ed8;
+}
+
+.resumen-seccion.seccion-parte2 {
+  border-left: 4px solid #d97706;
+  border-top: 1px solid #fde68a;
+}
+.resumen-seccion.seccion-parte2 .resumen-seccion-titulo {
+  color: #b45309;
+}
+
+.resumen-seccion.seccion-parte3 {
+  border-left: 4px solid #7c3aed;
+  border-top: 1px solid #ddd6fe;
+}
+.resumen-seccion.seccion-parte3 .resumen-seccion-titulo {
+  color: #6d28d9;
+}
+
+.resumen-seccion.seccion-parte4 {
+  border-left: 4px solid #0d9488;
+  border-top: 1px solid #99f6e4;
+}
+.resumen-seccion.seccion-parte4 .resumen-seccion-titulo {
+  color: #0f766e;
+}
+
+.resumen-seccion.seccion-parte5 {
+  border-left: 4px solid #059669;
+  border-top: 1px solid #a7f3d0;
+}
+.resumen-seccion.seccion-parte5 .resumen-seccion-titulo {
+  color: #047857;
+}
+
+.resumen-seccion.seccion-parte6 {
+  border-left: 4px solid #e11d48;
+  border-top: 1px solid #fecdd3;
+}
+.resumen-seccion.seccion-parte6 .resumen-seccion-titulo {
+  color: #be123c;
+}
+
+/* Barra fija superior en Detalle del Caso para estados siempre visibles */
+.detalle-sticky-bar {
+  position: sticky;
+  top: 4rem; /* justo debajo de topheader sticky */
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal-overlay.hidden {
+  display: none !important;
+}
+
 /* ---------- MODAL DE REGISTRO COMPACTO Y ELEGANTE ---------- */
 .modal-box-registro {
   width: 440px;
@@ -925,3 +1054,9 @@
 .seg-card-espinf .seg-num { color: #be123c; }
 .seg-card-espinf .seg-icon-bg { background: #fff1f2; color: #e11d48; }
 
+/* ---- Formulario: select de estado_global alineado correctamente ---- */
+[data-campo="estado_global"],
+[data-campo="estado_actual"] {
+  width: 100%;
+  box-sizing: border-box;
+}
