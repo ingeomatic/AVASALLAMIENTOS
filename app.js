@@ -29,32 +29,54 @@ const CAMPOS_LIBRES = [
   "tecnico_responsable", "observaciones_programacion",
   "informe_inspeccion", "fecha_informe", "conclusion_informe_inspeccion",
   "accion_a_seguir", "observaciones_parte2", "estado_global", "estado_actual",
-  "estado_verificacion", "detalle_verificacion"
+  "estado_verificacion", "detalle_verificacion",
+  "res_medidas_precautorias", "fecha_resolucion_medidas", "inf_medidas_precautorias", "fecha_informe_medidas",
+  "nota_remision_medidas", "fecha_nota", "hr_remision",
+  "intimacion", "fecha_intimacion", "informe_verificacion_intimacion", "fecha_informe_verificacion",
+  "carta_comando", "fecha_carta_comando", "informe_acta_desalojo", "fecha_desalojo", "observaciones_parte3"
 ];
 
+// Parte 1: Registro del Caso (sin Estado Global ni Estado Actual)
 const CAMPOS_PARTE1 = [
   "hoja_de_ruta","fecha_ingreso","departamento","provincia","municipio","nombre_predio",
   "tipo_propiedad","idpredio","codigo_expediente","clasificacion_caso",
   "denunciante","denunciados","informe_atencion","fecha_informe_atencion","prioridad",
-  "asociado_comunidad","nombre_comunidad","corresponde_atender","fundamento_determinacion",
-  "estado_global","estado_actual"
+  "asociado_comunidad","nombre_comunidad","corresponde_atender","fundamento_determinacion"
 ];
+
+// Parte 2: Inspección de Campo
 const CAMPOS_PARTE2 = [
   "fecha_programada_inspeccion","tecnico_responsable","observaciones_programacion",
   "fecha_real_inspeccion","estado_inspeccion","informe_inspeccion","fecha_informe",
-  "conclusion_informe_inspeccion","accion_a_seguir","observaciones_parte2"
+  "gestion_inspeccion","conclusion_informe_inspeccion","accion_a_seguir","observaciones_parte2"
 ];
+
+// Parte 3: Medidas Precautorias
 const CAMPOS_PARTE3 = [
-  "res_medidas_precautorias","fecha_resolucion_medidas","inf_medidas_precautorias","fecha_informe_medidas",
-  "nota_remision_medidas","fecha_nota","intimacion","fecha_intimacion","notificacion_intimacion",
-  "informe_verificacion_intimacion","fecha_informe_verificacion","estado_verificacion","detalle_verificacion",
+  "res_medidas_precautorias","fecha_resolucion_medidas","inf_medidas_precautorias","fecha_informe_medidas"
+];
+
+// Parte 4: Remisión de Medidas Precautorias a la Departamental
+const CAMPOS_PARTE4 = [
+  "nota_remision_medidas","fecha_nota","hr_remision"
+];
+
+// Parte 5: Intimación
+const CAMPOS_PARTE5 = [
+  "intimacion","fecha_intimacion","informe_verificacion_intimacion","fecha_informe_verificacion",
+  "estado_verificacion","detalle_verificacion"
+];
+
+// Parte 6: Desalojo con Apoyo de la Fuerza Pública
+const CAMPOS_PARTE6 = [
   "carta_comando","fecha_carta_comando","informe_acta_desalojo","fecha_desalojo","observaciones_parte3"
 ];
-// Campos opcionales que NO cuentan como obligatorios para el % de completitud (sección 39)
+
+// Campos opcionales que NO cuentan como obligatorios para el % de completitud
 const CAMPOS_OPCIONALES = [
   "idpredio","fundamento_determinacion","fecha_informe_atencion",
   "observaciones_programacion","conclusion_informe_inspeccion","observaciones_parte2",
-  "detalle_verificacion","observaciones_parte3","notificacion_intimacion"
+  "hr_remision","detalle_verificacion","observaciones_parte3","notificacion_intimacion"
 ];
 
 /* ============================================================================
@@ -422,17 +444,21 @@ const CASOS = {
   },
 
   completitud(caso) {
-    const obligatorios = [...CAMPOS_PARTE1, ...CAMPOS_PARTE2, ...CAMPOS_PARTE3].filter(c => !CAMPOS_OPCIONALES.includes(c));
+    const todosCampos = [
+      ...CAMPOS_PARTE1, ...CAMPOS_PARTE2, ...CAMPOS_PARTE3,
+      ...CAMPOS_PARTE4, ...CAMPOS_PARTE5, ...CAMPOS_PARTE6
+    ];
+    const obligatorios = todosCampos.filter(c => !CAMPOS_OPCIONALES.includes(c));
     const relevantes = obligatorios.filter(c => CASOS.campoAplica(caso, c));
     if (relevantes.length === 0) return 0;
     const llenos = relevantes.filter(c => !UTIL.vacio(caso[c])).length;
     return Math.round((llenos / relevantes.length) * 100);
   },
 
-  // La Parte 3 aplica si la acción a seguir incluye MEDIDAS PRECAUTORIAS.
   campoAplica(caso, campo) {
-    if (CAMPOS_PARTE3.includes(campo)) {
-      return caso.accion_a_seguir === "EMITIR MEDIDAS PRECAUTORIAS" || caso.accion_a_seguir === "MEDIDAS PRECAUTORIAS";
+    const camposMedidas = [...CAMPOS_PARTE3, ...CAMPOS_PARTE4, ...CAMPOS_PARTE5, ...CAMPOS_PARTE6];
+    if (camposMedidas.includes(campo)) {
+      return caso.accion_a_seguir === "EMITIR MEDIDAS PRECAUTORIAS" || caso.accion_a_seguir === "MEDIDAS PRECAUTORIAS" || !UTIL.vacio(caso.res_medidas_precautorias);
     }
     if (campo === "nombre_comunidad") {
       return caso.asociado_comunidad === "SI";
@@ -1070,16 +1096,16 @@ const DASHBOARD = {
     }
 
     cont.innerHTML = `
-      <table class="data-table">
+      <table class="data-table w-full">
         <thead>
           <tr>
-            <th>ID_INSPEC</th>
-            <th>Predio / Hoja de Ruta</th>
-            <th>Ubicación</th>
-            <th>Fecha</th>
-            <th>Estado</th>
-            <th>Registrado por</th>
-            <th class="text-center">Acción</th>
+            <th class="w-24">ID_INSPEC</th>
+            <th class="w-1/4">Predio / Hoja de Ruta</th>
+            <th class="w-1/6">Ubicación</th>
+            <th class="w-28">Fecha</th>
+            <th class="w-1/5">Estado</th>
+            <th class="w-36">Registrado por</th>
+            <th class="text-center w-20">Acción</th>
           </tr>
         </thead>
         <tbody>
@@ -1091,21 +1117,21 @@ const DASHBOARD = {
             const badgeCls = esConcluido ? "badge-concluido" : "badge-curso";
             return `
               <tr>
-                <td class="font-mono font-bold text-slate-900">${c.id_inspec}</td>
+                <td class="font-mono font-bold text-slate-900 whitespace-nowrap">${c.id_inspec}</td>
                 <td>
-                  <div class="font-medium text-slate-800">${c.nombre_predio || "—"}</div>
-                  <div class="text-[10px] text-slate-400">HR: ${c.hoja_de_ruta || "—"}</div>
+                  <div class="font-semibold text-slate-800">${c.nombre_predio || "—"}</div>
+                  <div class="text-[11px] text-slate-400 font-mono">HR: ${c.hoja_de_ruta || "—"}</div>
                 </td>
-                <td>${c.departamento || "—"} <span class="text-slate-400 text-[10px]">(${c.municipio || "—"})</span></td>
-                <td>${UTIL.fechaCorta(c.fecha_ingreso || c.registrado_en)}</td>
-                <td><span class="badge ${badgeCls}">${c.estado_actual || c.estado_global}</span></td>
+                <td class="text-xs text-slate-700">${c.departamento || "—"} <span class="text-slate-400">(${c.municipio || "—"})</span></td>
+                <td class="text-xs text-slate-600 whitespace-nowrap">${UTIL.fechaCorta(c.fecha_ingreso || c.registrado_en)}</td>
+                <td><span class="badge ${badgeCls} whitespace-nowrap">${c.estado_actual || c.estado_global}</span></td>
                 <td>
-                  <div class="flex items-center gap-1.5">
+                  <div class="flex items-center gap-1.5 whitespace-nowrap">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                    <span class="font-medium text-slate-700">${nombreUsuario}</span>
+                    <span class="font-medium text-slate-700 text-xs">${nombreUsuario}</span>
                   </div>
                 </td>
-                <td class="text-center">
+                <td class="text-center whitespace-nowrap">
                   <button class="btn btn-sm btn-ver" data-id="${c.id}" title="Ver expediente">
                     <span class="material-symbols-outlined text-[14px]">visibility</span>
                     <span>Ver</span>
@@ -1145,15 +1171,15 @@ const DASHBOARD = {
     }
 
     cont.innerHTML = `
-      <table class="data-table">
+      <table class="data-table w-full">
         <thead>
           <tr>
-            <th>ID_INSPEC</th>
-            <th>Predio / Causa</th>
-            <th>Ubicación</th>
-            <th>Estado Actual</th>
-            <th>Inspección</th>
-            <th class="text-center">Acciones</th>
+            <th class="w-24">ID_INSPEC</th>
+            <th class="w-1/3">Predio / Causa</th>
+            <th class="w-1/5">Ubicación</th>
+            <th class="w-1/5">Estado Actual</th>
+            <th class="w-36">Inspección</th>
+            <th class="text-center w-24">Acción</th>
           </tr>
         </thead>
         <tbody>
@@ -1373,55 +1399,40 @@ const LISTADO = {
         : ((c.actualizado_por && STATE.perfilesMap[c.actualizado_por]) ? STATE.perfilesMap[c.actualizado_por] : "—");
 
       return `
-        <tr>
-          <td class="font-mono text-slate-500">${c.nro}</td>
-          <td class="font-mono font-bold text-slate-900">${c.id_inspec}</td>
-          <td>${c.hoja_de_ruta || "—"}</td>
-          <td>${UTIL.fechaCorta(c.fecha_ingreso)}</td>
-          <td>${c.gestion || "—"}</td>
-          <td>${c.departamento || "—"}</td>
-          <td>${c.provincia || "—"}</td>
-          <td>${c.municipio || "—"}</td>
-          <td class="font-semibold text-slate-800">${c.nombre_predio || "—"}</td>
-          <td>${c.tipo_propiedad || "—"}</td>
-          <td>${c.clasificacion_caso || "—"}</td>
-          <td>${c.denunciante || "—"}</td>
-          <td>${LISTADO.badgePrioridad(c.prioridad)}</td>
-          <td>${LISTADO.badgeEstadoGlobal(c.estado_global)}</td>
-          <td><span class="font-medium text-slate-700 text-xs">${c.estado_actual}</span></td>
-          <td><span class="badge ${c.estado_inspeccion === 'INSPECCIONADO' ? 'badge-curso' : 'badge-media'}">${c.estado_inspeccion || "—"}</span></td>
-          <td>${c.accion_a_seguir || "—"}</td>
-          <td>
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="font-mono font-bold text-slate-900 whitespace-nowrap">${c.id_inspec}</td>
+          <td class="td-truncate font-mono text-xs" title="${c.hoja_de_ruta || ''}">${c.hoja_de_ruta || "—"}</td>
+          <td class="td-truncate" title="${c.departamento || ''}">${c.departamento || "—"}</td>
+          <td class="td-truncate font-semibold text-slate-800" title="${c.nombre_predio || ''}">${c.nombre_predio || "—"}</td>
+          <td class="whitespace-nowrap">${LISTADO.badgePrioridad(c.prioridad)}</td>
+          <td class="td-truncate font-medium text-slate-700 text-xs" title="${c.estado_actual || ''}">${c.estado_actual || "—"}</td>
+          <td class="whitespace-nowrap">${LISTADO.badgeEstadoGlobal(c.estado_global)}</td>
+          <td class="td-truncate" title="${nombreUsuario}">
             <div class="flex items-center gap-1.5 whitespace-nowrap">
               <span class="w-2 h-2 rounded-full ${c.creado_por ? 'bg-emerald-500' : 'bg-slate-300'} shrink-0"></span>
-              <span class="text-xs text-slate-700">${nombreUsuario}</span>
+              <span class="text-xs text-slate-700 truncate">${nombreUsuario}</span>
             </div>
           </td>
-          <td class="text-[11px] text-slate-400 whitespace-nowrap">${UTIL.fechaHora(c.actualizado_en)}</td>
           <td class="text-center whitespace-nowrap">
-            <div class="inline-flex items-center gap-1.5">
-              <button class="btn btn-sm btn-ver" data-accion="ver" data-id="${c.id}" title="Ver expediente">
-                <span class="material-symbols-outlined text-[14px]">visibility</span>
-                <span>Ver</span>
-              </button>
-              <button class="btn btn-sm btn-editar" data-accion="editar" data-id="${c.id}" title="Editar expediente">
-                <span class="material-symbols-outlined text-[14px]">edit</span>
-                <span>Editar</span>
-              </button>
-            </div>
+            <button class="btn btn-sm btn-ver" data-accion="ver" data-id="${c.id}" title="Ver expediente completo">
+              <span class="material-symbols-outlined text-[14px]">visibility</span>
+              <span>Ver</span>
+            </button>
           </td>
         </tr>
       `;
     }).join("");
 
     UTIL.qsa("button[data-accion]", body).forEach(b => {
-      b.onclick = () => b.dataset.accion === "ver" ? ROUTER.irADetalle(b.dataset.id) : ROUTER.irAEditar(b.dataset.id);
+      b.onclick = (e) => {
+        e.stopPropagation();
+        ROUTER.irADetalle(b.dataset.id);
+      };
     });
 
     LISTADO.sincronizarScrolls();
   },
 
-  // Requerimiento 7: Scroll horizontal accesible en cualquier posición
   sincronizarScrolls() {
     const wrap = UTIL.qs("#tabla-casos-wrap");
     const topBar = UTIL.qs("#tabla-casos-scroll-top");
@@ -1434,8 +1445,8 @@ const LISTADO = {
 
     const actualizarAnchos = () => {
       const sw = table.scrollWidth;
-      topInner.style.width = sw + "px";
-      floatInner.style.width = sw + "px";
+      if (topInner) topInner.style.width = sw + "px";
+      if (floatInner) floatInner.style.width = sw + "px";
     };
     actualizarAnchos();
 
@@ -1451,7 +1462,6 @@ const LISTADO = {
     wrap.onscroll = () => scrollHandler(wrap, [topBar, floatBar]);
     floatBar.onscroll = () => scrollHandler(floatBar, [wrap, topBar]);
 
-    // Visibilidad inteligente de la barra flotante según posición en pantalla
     const verificarVisibilidadFlotante = () => {
       const rect = wrap.getBoundingClientRect();
       const h = window.innerHeight;
@@ -1491,6 +1501,70 @@ const LISTADO = {
 const FORM = {
   modoEdicion: false,
 
+  poblarEstadosActuales(valorActual) {
+    const casos = STATE.casosCache || [];
+    const set = new Set();
+    casos.forEach(c => {
+      const ea = (c.estado_actual || "").trim();
+      if (ea) set.add(ea);
+    });
+    if (valorActual && String(valorActual).trim() !== "") {
+      set.add(String(valorActual).trim());
+    }
+    if (set.size === 0) {
+      [
+        "CON INSPECCION- PENDIENTE DE EMISION DE MEDIDAS PRECAUTORIAS",
+        "CON MEDIDAS PRECAUTORIAS",
+        "CON INTIMACION",
+        "CON CARTA AL COMANDO",
+        "POR DEFINIR",
+        "DESALOJADO",
+        "DENUNCIA DE AVASALLAMIENTO DESESTIMADA",
+        "SE PROSEGUIO CON EL TRAMITE DE DOTACION",
+        "REGISTRADO"
+      ].forEach(e => set.add(e));
+    }
+    const lista = [...set].sort((a, b) => a.localeCompare(b));
+    const sel = UTIL.qs("#form-estado-actual");
+    if (!sel) return;
+
+    let html = `<option value="">Seleccione Estado Actual</option>`;
+    lista.forEach(est => {
+      html += `<option value="${est}" ${est === valorActual ? "selected" : ""}>${est}</option>`;
+    });
+    html += `<option value="__NUEVO__">+ Registrar nuevo estado...</option>`;
+    sel.innerHTML = html;
+
+    sel.onchange = () => {
+      if (sel.value === "__NUEVO__") {
+        const nuevo = prompt("Ingrese el nombre del nuevo Estado Actual que desea registrar:");
+        if (nuevo && nuevo.trim()) {
+          const limpio = nuevo.trim().toUpperCase();
+          const opt = document.createElement("option");
+          opt.value = limpio;
+          opt.textContent = limpio;
+          opt.selected = true;
+          sel.insertBefore(opt, sel.querySelector('option[value="__NUEVO__"]'));
+          sel.value = limpio;
+          UTIL.toast(`Estado "${limpio}" agregado.`, "success");
+        } else {
+          sel.value = valorActual || "";
+        }
+      }
+      const egEl = UTIL.qs('[data-campo="estado_global"]');
+      if (egEl) {
+        const ea = (sel.value || "").trim().toUpperCase();
+        const concluidos = ["DESALOJADO", "DESESTIMADA", "DOTACION", "CONCLUIDO"];
+        if (concluidos.some(k => ea.includes(k))) {
+          egEl.value = "PROCESO CONCLUIDO";
+        } else if (ea) {
+          egEl.value = "PROCESO EN CURSO";
+        }
+      }
+      FORM.actualizarProgreso();
+    };
+  },
+
   async render(casoId) {
     await TERRITORIOS.cargar();
     TERRITORIOS.enlazarSelects(UTIL.qs("#form-departamento"), UTIL.qs("#form-provincia"), UTIL.qs("#form-municipio"));
@@ -1506,6 +1580,7 @@ const FORM = {
       STATE.casoActual = caso;
       UTIL.qs("#form-titulo").textContent = `Editar Caso · ${caso.id_inspec}`;
       UTIL.qs("#caso-id").value = caso.id;
+      FORM.poblarEstadosActuales(caso.estado_actual);
       FORM.llenarCampos(caso);
       TERRITORIOS.setValores(UTIL.qs("#form-departamento"), UTIL.qs("#form-provincia"), UTIL.qs("#form-municipio"), caso.departamento, caso.provincia, caso.municipio);
     } else {
@@ -1514,6 +1589,7 @@ const FORM = {
       UTIL.qs("#form-titulo").textContent = "Nuevo Caso";
       UTIL.qs("#form-caso").reset();
       UTIL.qs("#caso-id").value = "";
+      FORM.poblarEstadosActuales("");
       TERRITORIOS.setValores(UTIL.qs("#form-departamento"), UTIL.qs("#form-provincia"), UTIL.qs("#form-municipio"), "", "", "");
     }
 
@@ -1532,7 +1608,7 @@ const FORM = {
   llenarCampos(caso) {
     UTIL.qsa("[data-campo]").forEach(el => {
       const campo = el.dataset.campo;
-      if (["departamento","provincia","municipio"].includes(campo)) return; // manejado por TERRITORIOS
+      if (["departamento","provincia","municipio","estado_actual"].includes(campo)) return;
       const v = caso[campo];
       el.value = v === null || v === undefined ? "" : v;
     });
@@ -1578,28 +1654,57 @@ const FORM = {
   },
 
   actualizarParte3Visibilidad() {
-    const accion = UTIL.qs('[data-campo="accion_a_seguir"]').value;
-    const bloque = UTIL.qs("#bloque-parte3");
+    const accionEl = UTIL.qs('[data-campo="accion_a_seguir"]');
+    const accion = accionEl ? accionEl.value : "";
+    const habilitada = accion === "EMITIR MEDIDAS PRECAUTORIAS" || accion === "MEDIDAS PRECAUTORIAS" || (STATE.casoActual && !UTIL.vacio(STATE.casoActual.res_medidas_precautorias));
+    
+    ["parte3", "parte4", "parte5", "parte6"].forEach(p => {
+      const bloque = UTIL.qs("#bloque-" + p);
+      if (bloque) {
+        bloque.style.opacity = habilitada ? "1" : ".55";
+        UTIL.qsa(`#${p}-body [data-campo]`).forEach(el => el.disabled = !habilitada);
+        const est = UTIL.qs("#estado-" + p);
+        if (est) est.textContent = habilitada ? "EN PROCESO" : "NO APLICA";
+      }
+    });
+
     const hint = UTIL.qs("#parte3-hint");
-    const habilitada = accion === "EMITIR MEDIDAS PRECAUTORIAS" || accion === "MEDIDAS PRECAUTORIAS";
-    bloque.style.opacity = habilitada ? "1" : ".55";
-    hint.classList.toggle("hidden", habilitada);
-    UTIL.qsa("#parte3-body [data-campo]").forEach(el => el.disabled = !habilitada);
-    UTIL.qs("#estado-parte3").textContent = habilitada ? "EN PROCESO" : "NO APLICA";
+    if (hint) hint.classList.toggle("hidden", habilitada);
   },
 
   actualizarProgreso() {
     const caso = FORM.leerFormularioComoObjeto();
     const p1 = CASOS.completitudParte(caso, CAMPOS_PARTE1);
     const p2 = CASOS.completitudParte(caso, CAMPOS_PARTE2);
-    const p3 = (caso.accion_a_seguir === "EMITIR MEDIDAS PRECAUTORIAS" || caso.accion_a_seguir === "MEDIDAS PRECAUTORIAS") ? CASOS.completitudParte(caso, CAMPOS_PARTE3) : 0;
-    UTIL.qs("#progreso-parte1").style.width = p1 + "%";
-    UTIL.qs("#progreso-parte2").style.width = p2 + "%";
-    UTIL.qs("#progreso-parte3").style.width = p3 + "%";
-    UTIL.qs("#estado-parte1").textContent = p1 === 100 ? "COMPLETO" : p1 === 0 ? "PENDIENTE" : "EN PROCESO";
-    UTIL.qs("#estado-parte2").textContent = p2 === 100 ? "COMPLETO" : p2 === 0 ? "PENDIENTE" : "EN PROCESO";
+    const aplicaMedidas = caso.accion_a_seguir === "EMITIR MEDIDAS PRECAUTORIAS" || caso.accion_a_seguir === "MEDIDAS PRECAUTORIAS" || !UTIL.vacio(caso.res_medidas_precautorias);
+    
+    const setProg = (id, pct) => {
+      const bar = UTIL.qs("#progreso-" + id);
+      if (bar) bar.style.width = pct + "%";
+      const est = UTIL.qs("#estado-" + id);
+      if (est) est.textContent = pct === 100 ? "COMPLETO" : (pct === 0 ? "PENDIENTE" : "EN PROCESO");
+    };
+
+    setProg("parte1", p1);
+    setProg("parte2", p2);
+
+    if (aplicaMedidas) {
+      setProg("parte3", CASOS.completitudParte(caso, CAMPOS_PARTE3));
+      setProg("parte4", CASOS.completitudParte(caso, CAMPOS_PARTE4));
+      setProg("parte5", CASOS.completitudParte(caso, CAMPOS_PARTE5));
+      setProg("parte6", CASOS.completitudParte(caso, CAMPOS_PARTE6));
+    } else {
+      ["parte3", "parte4", "parte5", "parte6"].forEach(p => {
+        const est = UTIL.qs("#estado-" + p);
+        if (est) est.textContent = "NO APLICA";
+        const bar = UTIL.qs("#progreso-" + p);
+        if (bar) bar.style.width = "0%";
+      });
+    }
+
     const total = CASOS.completitud(caso);
-    UTIL.qs("#form-completitud").textContent = `Completitud del caso: ${total}%`;
+    const cEl = UTIL.qs("#form-completitud");
+    if (cEl) cEl.textContent = `Completitud del caso: ${total}%`;
   },
 
   leerFormularioComoObjeto() {
@@ -1874,15 +1979,37 @@ const DETALLE = {
     if (!caso) return;
     STATE.casoActual = caso;
 
+    // Actualizar barra fija adhesiva (Estados siempre visibles aunque se haga scroll)
+    const stickyId = UTIL.qs("#sticky-id-inspec");
+    if (stickyId) stickyId.textContent = caso.id_inspec || "—";
+    const stickyPredio = UTIL.qs("#sticky-predio");
+    if (stickyPredio) stickyPredio.textContent = caso.nombre_predio || "Sin predio";
+    const stickyGlobal = UTIL.qs("#sticky-estado-global");
+    if (stickyGlobal) stickyGlobal.innerHTML = LISTADO.badgeEstadoGlobal(caso.estado_global);
+    const stickyActual = UTIL.qs("#sticky-estado-actual");
+    if (stickyActual) stickyActual.innerHTML = `<span class="badge badge-curso">${caso.estado_actual || "—"}</span>`;
+
+    // Primer Box: ID_INSPEC de gran impacto visual, Predio y Ubicación ÚNICAMENTE
+    const ubicacionPartes = [caso.departamento, caso.provincia, caso.municipio].filter(Boolean);
+    const ubicacionStr = ubicacionPartes.length > 0 ? ubicacionPartes.join("  ·  ") : "Ubicación no especificada";
+
     UTIL.qs("#detalle-header").innerHTML = `
-      <div class="kv"><span class="k">ID_INSPEC</span><span class="v font-mono font-bold">${caso.id_inspec}</span></div>
-      <div class="kv"><span class="k">Predio</span><span class="v font-bold">${caso.nombre_predio || "—"}</span></div>
-      <div class="kv"><span class="k">Departamento</span><span class="v">${caso.departamento || "—"}</span></div>
-      <div class="kv"><span class="k">Municipio</span><span class="v">${caso.municipio || "—"}</span></div>
-      <div class="kv"><span class="k">Estado Global</span><span class="v">${LISTADO.badgeEstadoGlobal(caso.estado_global)}</span></div>
-      <div class="kv"><span class="k">Estado Actual</span><span class="v"><span class="badge badge-curso">${caso.estado_actual}</span></span></div>
-      <div class="kv"><span class="k">Prioridad</span><span class="v">${LISTADO.badgePrioridad(caso.prioridad)}</span></div>
-      <div class="kv"><span class="k">Completitud</span><span class="v font-bold text-[#0f392b]">${CASOS.completitud(caso)}%</span></div>`;
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-5 w-full">
+        <div class="flex items-start sm:items-center gap-4">
+          <div class="px-5 py-3 rounded-xl bg-[#0f392b] text-white shadow-md flex flex-col items-center justify-center shrink-0 border border-emerald-900/20">
+            <span class="text-[9px] uppercase tracking-widest font-bold text-emerald-300">ID_INSPEC</span>
+            <span class="text-xl font-mono font-extrabold tracking-wide">${caso.id_inspec}</span>
+          </div>
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Predio</span>
+            <h3 class="text-xl font-extrabold text-slate-900 leading-tight">${caso.nombre_predio || "Sin denominación de predio"}</h3>
+            <div class="flex items-center gap-1.5 text-xs text-slate-600 mt-1.5 font-medium">
+              <span class="material-symbols-outlined text-[16px] text-[#0f392b]">pin_drop</span>
+              <span>${ubicacionStr}</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
 
     UTIL.qs("#btn-detalle-editar").onclick = () => ROUTER.irAEditar(caso.id);
     UTIL.qs("#btn-detalle-volver").onclick = (e) => { e.preventDefault(); ROUTER.volver(); };
@@ -1902,9 +2029,10 @@ const DETALLE = {
     });
   },
 
-  // Requerimiento 9: Resumen estructurado como formulario ordenado y limpio
+  // Resumen estructurado en 6 Partes con colores distintivos
   renderResumen(caso) {
     const ETIQUETAS = {
+      // Parte 1
       hoja_de_ruta: "Hoja de Ruta",
       fecha_ingreso: "Fecha de Ingreso",
       departamento: "Departamento",
@@ -1924,13 +2052,11 @@ const DETALLE = {
       nombre_comunidad: "Nombre de la Comunidad",
       corresponde_atender: "¿Corresponde Atender?",
       fundamento_determinacion: "Fundamento / Observación de la Determinación",
-      estado_global: "Estado Global",
-      estado_actual: "Estado Actual",
       // Parte 2
       fecha_programada_inspeccion: "Fecha Programada de Inspección",
       tecnico_responsable: "Técnico Responsable",
       observaciones_programacion: "Observaciones de Programación",
-      fecha_real_inspeccion: "Fecha Real de Inspección",
+      fecha_real_inspeccion: "Fecha de la Inspección de Campo",
       estado_inspeccion: "Estado de la Inspección",
       informe_inspeccion: "Informe de Inspección",
       fecha_informe: "Fecha del Informe",
@@ -1938,28 +2064,47 @@ const DETALLE = {
       conclusion_informe_inspeccion: "Conclusión del Informe de Inspección",
       accion_a_seguir: "Acción a Seguir",
       observaciones_parte2: "Observaciones de Campo",
-      // Parte 3
+      // Parte 3: Medidas Precautorias
       res_medidas_precautorias: "Resolución de Medidas Precautorias",
       fecha_resolucion_medidas: "Fecha de Resolución",
       inf_medidas_precautorias: "Informe de Medidas Precautorias",
-      fecha_informe_medidas: "Fecha Informe de Medidas",
+      fecha_informe_medidas: "Fecha Informe de Medidas Precautorias",
+      // Parte 4: Remisión a Departamental
       nota_remision_medidas: "Nota de Remisión",
       fecha_nota: "Fecha de Nota",
-      intimacion: "Intimación",
+      hr_remision: "Hoja de Ruta de Remisión",
+      // Parte 5: Intimación
+      intimacion: "Auto o Acta de Intimación",
       fecha_intimacion: "Fecha de Intimación",
-      notificacion_intimacion: "Notificación de Intimación",
-      informe_verificacion_intimacion: "Informe de Verificación",
+      informe_verificacion_intimacion: "Informe de Verificación de Intimación",
       fecha_informe_verificacion: "Fecha Informe Verificación",
       estado_verificacion: "Estado de la Verificación",
       detalle_verificacion: "Detalle de la Verificación",
+      // Parte 6: Desalojo
       carta_comando: "Carta al Comando",
       fecha_carta_comando: "Fecha Carta al Comando",
       informe_acta_desalojo: "Informe / Acta de Desalojo",
       fecha_desalojo: "Fecha de Desalojo",
-      observaciones_parte3: "Observaciones Medidas y Desalojo"
+      observaciones_parte3: "Observaciones del Desalojo"
     };
 
     const formatearValor = (campo, valor) => {
+      // Fusión de notificación de intimación en el campo intimación si estuviese presente en el registro
+      if (campo === "intimacion") {
+        let texto = valor || "";
+        if (!UTIL.vacio(caso.notificacion_intimacion)) {
+          if (!UTIL.vacio(texto)) {
+            if (!texto.includes(caso.notificacion_intimacion)) {
+              texto = `${texto} · Notif: ${caso.notificacion_intimacion}`;
+            }
+          } else {
+            texto = `Notif: ${caso.notificacion_intimacion}`;
+          }
+        }
+        if (UTIL.vacio(texto)) return `<span class="resumen-campo-val vacio">Sin registrar</span>`;
+        return `<span class="resumen-campo-val font-semibold">${texto}</span>`;
+      }
+
       if (UTIL.vacio(valor)) return `<span class="resumen-campo-val vacio">Sin registrar</span>`;
       if (campo.startsWith("fecha")) return `<span class="resumen-campo-val font-semibold">${UTIL.fechaCorta(valor)}</span>`;
       if (campo === "prioridad") return LISTADO.badgePrioridad(valor);
@@ -1983,31 +2128,29 @@ const DETALLE = {
       }).join("");
     };
 
+    const aplicaMedidas = caso.accion_a_seguir === "EMITIR MEDIDAS PRECAUTORIAS" || caso.accion_a_seguir === "MEDIDAS PRECAUTORIAS" || !UTIL.vacio(caso.res_medidas_precautorias);
+
     let html = `
-      <!-- PARTE 1 -->
-      <div class="resumen-seccion">
+      <!-- PARTE 1: REGISTRO DEL CASO (AZUL / SLATE) -->
+      <div class="resumen-seccion seccion-parte1">
         <div class="resumen-seccion-header">
           <div class="resumen-seccion-titulo">
             <span class="material-symbols-outlined text-[18px]">folder</span>
             <span>Parte 1 · Registro del Caso</span>
           </div>
-          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">Expediente Oficial</span>
         </div>
         <div class="resumen-form-grid">
           ${renderGrupoCampos(CAMPOS_PARTE1)}
         </div>
       </div>
 
-      <!-- PARTE 2 -->
-      <div class="resumen-seccion">
+      <!-- PARTE 2: INSPECCION DE CAMPO (ÁMBAR / DORADO) -->
+      <div class="resumen-seccion seccion-parte2">
         <div class="resumen-seccion-header">
           <div class="resumen-seccion-titulo">
             <span class="material-symbols-outlined text-[18px]">pin_drop</span>
-            <span>Parte 2 · Análisis e Inspección de Campo</span>
+            <span>Parte 2 · Inspección de Campo</span>
           </div>
-          <span class="text-xs font-semibold px-2 py-0.5 rounded ${caso.estado_inspeccion === 'INSPECCIONADO' ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800'}">
-            ${caso.estado_inspeccion || "PENDIENTE"}
-          </span>
         </div>
         <div class="resumen-form-grid">
           ${renderGrupoCampos(CAMPOS_PARTE2)}
@@ -2015,20 +2158,58 @@ const DETALLE = {
       </div>
     `;
 
-    // PARTE 3 (si aplica)
-    const aplicaParte3 = caso.accion_a_seguir === "EMITIR MEDIDAS PRECAUTORIAS" || caso.accion_a_seguir === "MEDIDAS PRECAUTORIAS" || !UTIL.vacio(caso.res_medidas_precautorias);
-    if (aplicaParte3) {
+    // Si aplica la fase de medidas y seguimiento, se muestran las partes 3, 4, 5 y 6 diferenciadas por color
+    if (aplicaMedidas) {
       html += `
-        <div class="resumen-seccion">
+        <!-- PARTE 3: MEDIDAS PRECAUTORIAS (ÍNDIGO / VIOLETA) -->
+        <div class="resumen-seccion seccion-parte3">
           <div class="resumen-seccion-header">
             <div class="resumen-seccion-titulo">
               <span class="material-symbols-outlined text-[18px]">gavel</span>
-              <span>Parte 3 · Medidas Precautorias y Seguimiento</span>
+              <span>Parte 3 · Medidas Precautorias</span>
             </div>
-            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-50 text-indigo-800">Medidas Activas</span>
           </div>
           <div class="resumen-form-grid">
             ${renderGrupoCampos(CAMPOS_PARTE3)}
+          </div>
+        </div>
+
+        <!-- PARTE 4: REMISIÓN DE MEDIDAS PRECAUTORIAS A LA DEPARTAMENTAL (CIAN / TEAL) -->
+        <div class="resumen-seccion seccion-parte4">
+          <div class="resumen-seccion-header">
+            <div class="resumen-seccion-titulo">
+              <span class="material-symbols-outlined text-[18px]">send</span>
+              <span>Parte 4 · Remisión de Medidas Precautorias a la Departamental</span>
+            </div>
+          </div>
+          <div class="resumen-form-grid">
+            ${renderGrupoCampos(CAMPOS_PARTE4)}
+          </div>
+        </div>
+
+        <!-- PARTE 5: INTIMACIÓN (ESMERALDA / VERDE) -->
+        <div class="resumen-seccion seccion-parte5">
+          <div class="resumen-seccion-header">
+            <div class="resumen-seccion-titulo">
+              <span class="material-symbols-outlined text-[18px]">fact_check</span>
+              <span>Parte 5 · Intimación</span>
+            </div>
+          </div>
+          <div class="resumen-form-grid">
+            ${renderGrupoCampos(CAMPOS_PARTE5)}
+          </div>
+        </div>
+
+        <!-- PARTE 6: DESALOJO CON APOYO DE LA FUERZA PÚBLICA (ROJO / ROSE) -->
+        <div class="resumen-seccion seccion-parte6">
+          <div class="resumen-seccion-header">
+            <div class="resumen-seccion-titulo">
+              <span class="material-symbols-outlined text-[18px]">shield</span>
+              <span>Parte 6 · Desalojo con Apoyo de la Fuerza Pública</span>
+            </div>
+          </div>
+          <div class="resumen-form-grid">
+            ${renderGrupoCampos(CAMPOS_PARTE6)}
           </div>
         </div>
       `;
@@ -2037,20 +2218,21 @@ const DETALLE = {
     UTIL.qs("#tab-resumen").innerHTML = html;
   },
 
-  // Requerimiento 10: Línea de tiempo compacta como un flujo o camino ordenado
+  // Flujo procesal secuencial del expediente
   async renderLineaTiempo(caso) {
     const etapas = [
       { titulo: "Registro Inicial", ok: true, fecha: caso.registrado_en || caso.fecha_ingreso, doc: caso.hoja_de_ruta ? `Hoja de Ruta: ${caso.hoja_de_ruta}` : null },
       { titulo: "Informe de Atención", ok: !UTIL.vacio(caso.informe_atencion), fecha: caso.fecha_informe_atencion, doc: caso.informe_atencion },
       { titulo: "Determinación del Caso", ok: caso.corresponde_atender && caso.corresponde_atender !== "PENDIENTE", fecha: null, doc: caso.corresponde_atender ? `Determinación: ${caso.corresponde_atender}` : null },
       { titulo: "Programación de Inspección", ok: !UTIL.vacio(caso.fecha_programada_inspeccion), fecha: caso.fecha_programada_inspeccion, doc: caso.tecnico_responsable ? `Técnico: ${caso.tecnico_responsable}` : null },
-      { titulo: "Inspección Realizada", ok: !UTIL.vacio(caso.fecha_real_inspeccion) || caso.estado_inspeccion === "INSPECCIONADO", fecha: caso.fecha_real_inspeccion, doc: caso.estado_inspeccion },
+      { titulo: "Inspección de Campo", ok: !UTIL.vacio(caso.fecha_real_inspeccion) || caso.estado_inspeccion === "INSPECCIONADO", fecha: caso.fecha_real_inspeccion, doc: caso.estado_inspeccion },
       { titulo: "Informe Técnico de Inspección", ok: !UTIL.vacio(caso.fecha_informe) || !UTIL.vacio(caso.informe_inspeccion), fecha: caso.fecha_informe, doc: caso.informe_inspeccion },
       { titulo: "Medidas Precautorias", ok: !UTIL.vacio(caso.res_medidas_precautorias), fecha: caso.fecha_resolucion_medidas, doc: caso.res_medidas_precautorias },
-      { titulo: "Intimación", ok: !UTIL.vacio(caso.intimacion), fecha: caso.fecha_intimacion, doc: caso.intimacion },
-      { titulo: "Verificación de Cumplimiento", ok: !UTIL.vacio(caso.informe_verificacion_intimacion), fecha: caso.fecha_informe_verificacion, doc: caso.estado_verificacion },
+      { titulo: "Remisión Departamental", ok: !UTIL.vacio(caso.nota_remision_medidas) || !UTIL.vacio(caso.hr_remision), fecha: caso.fecha_nota, doc: caso.hr_remision ? `HR Rem: ${caso.hr_remision}` : caso.nota_remision_medidas },
+      { titulo: "Auto o Acta de Intimación", ok: !UTIL.vacio(caso.intimacion) || !UTIL.vacio(caso.notificacion_intimacion), fecha: caso.fecha_intimacion, doc: caso.intimacion },
+      { titulo: "Verificación de Intimación", ok: !UTIL.vacio(caso.informe_verificacion_intimacion), fecha: caso.fecha_informe_verificacion, doc: caso.estado_verificacion },
       { titulo: "Carta al Comando", ok: !UTIL.vacio(caso.carta_comando), fecha: caso.fecha_carta_comando, doc: caso.carta_comando },
-      { titulo: "Desalojo / Conclusión", ok: !UTIL.vacio(caso.fecha_desalojo) || caso.estado_actual === "DESALOJADO", fecha: caso.fecha_desalojo, doc: caso.informe_acta_desalojo }
+      { titulo: "Desalojo con Fuerza Pública", ok: !UTIL.vacio(caso.fecha_desalojo) || caso.estado_actual === "DESALOJADO", fecha: caso.fecha_desalojo, doc: caso.informe_acta_desalojo }
     ];
 
     const cont = UTIL.qs("#tab-linea-tiempo");
@@ -2139,6 +2321,12 @@ const SEGUIMIENTO = {
     await TERRITORIOS.cargar();
     const depSel = UTIL.qs("#seg-filtro-departamento");
     depSel.innerHTML = `<option value="">Departamento</option>` + TERRITORIOS.departamentos().map(d => `<option>${d}</option>`).join("");
+
+    const estSel = UTIL.qs("#seg-filtro-estado");
+    if (estSel) {
+      const estadosInsp = [...new Set(STATE.casosCache.map(c => (c.estado_inspeccion || "").trim()).filter(Boolean))].sort();
+      estSel.innerHTML = `<option value="">Estado de Inspección</option>` + estadosInsp.map(e => `<option value="${e}">${e}</option>`).join("");
+    }
 
     ["seg-filtro-mes","seg-filtro-gestion","seg-filtro-departamento","seg-filtro-tecnico","seg-filtro-estado"].forEach(id => {
       const el = UTIL.qs("#" + id);
@@ -2276,24 +2464,26 @@ const SEGUIMIENTO = {
       });
     }
 
-    const hoy = new Date();
     UTIL.qs("#tabla-seguimiento-body").innerHTML = lista.map(c => {
-      const ref = c.fecha_real_inspeccion || c.fecha_programada_inspeccion;
-      const dias = ref ? Math.floor((hoy - new Date(ref)) / 86400000) : "—";
-      return `<tr>
-        <td>${c.id_inspec}</td><td>${c.nombre_predio || c.hoja_de_ruta || "—"}</td>
-        <td>${c.departamento || "—"}</td><td>${c.municipio || "—"}</td>
-        <td>${UTIL.fechaCorta(c.fecha_programada_inspeccion)}</td><td>${UTIL.fechaCorta(c.fecha_real_inspeccion)}</td>
-        <td>${c.tecnico_responsable || "—"}</td><td>${c.estado_inspeccion || "—"}</td>
-        <td>${UTIL.vacio(c.informe_inspeccion) ? "—" : "Sí"}</td><td>${UTIL.fechaCorta(c.fecha_informe)}</td>
-        <td>${dias}</td>
-        <td>
-          <button class="btn btn-sm btn-ver" data-id="${c.id}">
-            <span class="material-symbols-outlined text-[14px]">visibility</span>
-            <span>Ver</span>
-          </button>
-        </td>
-      </tr>`;
+      const predioCaso = c.nombre_predio || c.hoja_de_ruta || "—";
+      const badgeEstado = c.estado_inspeccion === "INSPECCIONADO" 
+        ? `<span class="badge badge-curso">INSPECCIONADO</span>` 
+        : (c.estado_inspeccion === "PROGRAMADA" ? `<span class="badge badge-media">PROGRAMADA</span>` : `<span class="badge badge-concluido">${c.estado_inspeccion || "PENDIENTE"}</span>`);
+
+      return `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="font-mono font-bold text-slate-900 whitespace-nowrap">${c.id_inspec}</td>
+          <td class="td-truncate font-semibold text-slate-800" title="${predioCaso}">${predioCaso}</td>
+          <td class="td-truncate" title="${c.departamento || ''}">${c.departamento || "—"}</td>
+          <td class="whitespace-nowrap">${badgeEstado}</td>
+          <td class="text-center whitespace-nowrap">
+            <button class="btn btn-sm btn-ver" data-id="${c.id}" title="Ver expediente">
+              <span class="material-symbols-outlined text-[14px]">visibility</span>
+              <span>Ver</span>
+            </button>
+          </td>
+        </tr>
+      `;
     }).join("");
     UTIL.qsa("#tabla-seguimiento-body button").forEach(b => b.onclick = () => ROUTER.irADetalle(b.dataset.id));
   }
@@ -2667,10 +2857,12 @@ const IMPORTAR = {
       "nombre_predio","tipo_propiedad","idpredio","codigo_expediente","clasificacion_caso",
       "denunciante","denunciados","informe_atencion","fecha_informe_atencion","asociado_comunidad","nombre_comunidad","corresponde_atender","fundamento_determinacion","prioridad",
       "informe_inspeccion","fecha_informe","gestion_inspeccion","estado_inspeccion","fecha_programada_inspeccion",
-      "fecha_real_inspeccion","tecnico_responsable","conclusion_informe_inspeccion","accion_a_seguir",
-      "res_medidas_precautorias","fecha_resolucion_medidas","intimacion","fecha_intimacion",
-      "informe_verificacion_intimacion","estado_verificacion","carta_comando","fecha_carta_comando",
-      "informe_acta_desalojo","fecha_desalojo","estado_global","estado_actual","registrado_en","actualizado_en"
+      "fecha_real_inspeccion","tecnico_responsable","conclusion_informe_inspeccion","accion_a_seguir","observaciones_parte2",
+      "res_medidas_precautorias","fecha_resolucion_medidas","inf_medidas_precautorias","fecha_informe_medidas",
+      "nota_remision_medidas","fecha_nota","hr_remision",
+      "intimacion","fecha_intimacion","informe_verificacion_intimacion","fecha_informe_verificacion","estado_verificacion","detalle_verificacion",
+      "carta_comando","fecha_carta_comando","informe_acta_desalojo","fecha_desalojo","observaciones_parte3",
+      "estado_global","estado_actual","registrado_en","actualizado_en"
     ];
     const escapar = (v) => {
       if (v === null || v === undefined) return "";
@@ -2819,6 +3011,14 @@ const ROUTER = {
     detalle: "Detalle del Caso", formulario: "Expediente de Caso"
   },
 
+  resetScroll() {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const mc = UTIL.qs(".main-content");
+    if (mc) mc.scrollTop = 0;
+  },
+
   volver() {
     const ant = ROUTER._vistaAnterior;
     if (ant && ant.vista) {
@@ -2840,6 +3040,7 @@ const ROUTER = {
     }
     ROUTER.vistaActual = vista;
 
+    ROUTER.resetScroll();
     UTIL.qsa(".view").forEach(v => v.classList.remove("active"));
     UTIL.qsa(".sidebar-nav a, .main-nav a").forEach(a => {
       const match = a.dataset.view === vista;
@@ -2849,7 +3050,6 @@ const ROUTER = {
     if (el) el.classList.add("active");
     window.location.hash = vista;
     UTIL.qs("#topheader-title").textContent = ROUTER.TITULOS[vista] || "Dashboard";
-    UTIL.qs(".main-content").scrollTop = 0;
 
     if (vista === "dashboard") await DASHBOARD.render();
     else if (vista === "listado") await LISTADO.render();
@@ -2858,6 +3058,8 @@ const ROUTER = {
     else if (vista === "solicitudes") { if (!AUTH.esAdmin()) { UTIL.toast("Acceso restringido.", "error"); return ROUTER.ir("dashboard"); } await SOLICITUDES_VIEW.render(); }
     else if (vista === "usuarios") { if (!AUTH.esAdmin()) { UTIL.toast("Acceso restringido.", "error"); return ROUTER.ir("dashboard"); } await USUARIOS.render(); }
     else if (vista === "importacion") { if (!AUTH.esAdmin()) { UTIL.toast("Acceso restringido.", "error"); return ROUTER.ir("dashboard"); } IMPORTACION_VIEW.render(); }
+    
+    ROUTER.resetScroll();
   },
 
   async irAListadoConFiltro(filtro, label) {
@@ -2866,12 +3068,13 @@ const ROUTER = {
     }
     ROUTER.vistaActual = "listado";
 
+    ROUTER.resetScroll();
     UTIL.qsa(".view").forEach(v => v.classList.remove("active"));
     UTIL.qs("#view-listado").classList.add("active");
     UTIL.qsa(".sidebar-nav a, .main-nav a").forEach(a => a.classList.toggle("active", a.dataset.view === "listado"));
     UTIL.qs("#topheader-title").textContent = "Casos";
-    UTIL.qs(".main-content").scrollTop = 0;
     await LISTADO.render(filtro, label);
+    ROUTER.resetScroll();
   },
 
   async irANuevoCaso() {
@@ -2880,12 +3083,13 @@ const ROUTER = {
     }
     ROUTER.vistaActual = "formulario";
 
+    ROUTER.resetScroll();
     UTIL.qsa(".view").forEach(v => v.classList.remove("active"));
     UTIL.qs("#view-formulario").classList.add("active");
     UTIL.qsa(".sidebar-nav a, .main-nav a").forEach(a => a.classList.remove("active"));
     UTIL.qs("#topheader-title").textContent = "Nuevo Caso";
-    UTIL.qs(".main-content").scrollTop = 0;
     await FORM.render(null);
+    ROUTER.resetScroll();
   },
 
   async irAEditar(casoId) {
@@ -2894,12 +3098,13 @@ const ROUTER = {
     }
     ROUTER.vistaActual = "formulario";
 
+    ROUTER.resetScroll();
     UTIL.qsa(".view").forEach(v => v.classList.remove("active"));
     UTIL.qs("#view-formulario").classList.add("active");
     UTIL.qsa(".sidebar-nav a, .main-nav a").forEach(a => a.classList.remove("active"));
     UTIL.qs("#topheader-title").textContent = "Editar Caso";
-    UTIL.qs(".main-content").scrollTop = 0;
     await FORM.render(casoId);
+    ROUTER.resetScroll();
   },
 
   async irADetalle(casoId) {
@@ -2908,12 +3113,13 @@ const ROUTER = {
     }
     ROUTER.vistaActual = "detalle";
 
+    ROUTER.resetScroll();
     UTIL.qsa(".view").forEach(v => v.classList.remove("active"));
     UTIL.qs("#view-detalle").classList.add("active");
     UTIL.qsa(".sidebar-nav a, .main-nav a").forEach(a => a.classList.remove("active"));
     UTIL.qs("#topheader-title").textContent = "Detalle del Caso";
-    UTIL.qs(".main-content").scrollTop = 0;
     await DETALLE.render(casoId);
+    ROUTER.resetScroll();
   }
 };
 
