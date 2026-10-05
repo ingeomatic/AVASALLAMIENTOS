@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" class="h-full bg-slate-950">
+<html lang="es" class="h-full bg-[#f8fafc]">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -347,29 +347,28 @@
           </div>
         </div>
 
-        <!-- FILA 6: ÚLTIMOS CAMBIOS REALIZADOS Y CASOS DE PRIORIDAD ALTA -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-              <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-slate-500 text-[20px]">history</span>
-                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900">ÚLTIMOS CAMBIOS REALIZADOS</h3>
-              </div>
-              <span class="text-[11px] font-semibold text-slate-400">Recientes</span>
+        <!-- FILA 6: CASOS DE PRIORIDAD ALTA -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm mb-6">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+              <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900">CASOS DE PRIORIDAD ALTA</h3>
             </div>
-            <div id="dashboard-ultimos-registros" class="overflow-x-auto"></div>
+            <span class="px-2.5 py-1 rounded text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase">Atención Urgente</span>
           </div>
+          <div id="dashboard-prioridad-alta" class="overflow-x-auto"></div>
+        </div>
 
-          <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-              <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900">CASOS DE PRIORIDAD ALTA</h3>
-              </div>
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase">Urgente</span>
+        <!-- FILA 7: ÚLTIMOS CAMBIOS REALIZADOS (EN FILA COMPLETA, ESPACIOSA) -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-slate-500 text-[20px]">history</span>
+              <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900">ÚLTIMOS CAMBIOS REALIZADOS</h3>
             </div>
-            <div id="dashboard-prioridad-alta" class="overflow-x-auto"></div>
+            <span class="text-xs font-semibold text-slate-500">Expedientes registrados y actualizados recientemente</span>
           </div>
+          <div id="dashboard-ultimos-registros" class="overflow-x-auto"></div>
         </div>
       </section>
 
@@ -414,33 +413,35 @@
           <button class="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer transition-colors" id="btn-reset-filtros">Limpiar</button>
         </div>
 
-        <!-- CONTENEDOR CON SCROLL HORIZONTAL ACCESIBLE Y PERMANENTE -->
-        <div class="table-scroll-container">
-          <!-- Barra de scroll superior sincronizada (siempre visible arriba de la tabla) -->
-          <div class="table-scroll-top" id="tabla-casos-scroll-top" title="Desplazamiento horizontal superior">
-            <div class="table-scroll-top-inner" id="tabla-casos-scroll-top-inner"></div>
-          </div>
-
-          <!-- Tabla de casos principal -->
-          <div class="table-wrap" id="tabla-casos-wrap">
-            <table class="data-table" id="tabla-casos">
-              <thead>
-                <tr>
-                  <th>NRO</th><th>ID_INSPEC</th><th>Hoja de Ruta</th><th>F. Ingreso</th><th>Gestión</th>
-                  <th>Depto</th><th>Prov</th><th>Municipio</th><th>Predio</th><th>Tipo Propiedad</th>
-                  <th>Clasificación</th><th>Denunciante</th><th>Prioridad</th><th>Estado Global</th>
-                  <th>Estado Actual</th><th>Estado Inspección</th><th>Acción a Seguir</th><th>Usuario</th>
-                  <th>Actualizado</th><th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="tabla-casos-body"></tbody>
-            </table>
-          </div>
-
-          <!-- Barra de scroll flotante inferior sincronizada (visible mientras la tabla esté en pantalla) -->
-          <div class="table-scroll-floating" id="tabla-casos-scroll-floating" title="Desplazamiento horizontal flotante">
-            <div class="table-scroll-floating-inner" id="tabla-casos-scroll-floating-inner"></div>
-          </div>
+        <!-- TABLA DE CASOS OPTIMIZADA (9 COLUMNAS SIN SCROLL EXCESIVO) -->
+        <div class="table-wrap" id="tabla-casos-wrap">
+          <table class="data-table" id="tabla-casos">
+            <colgroup>
+              <col class="col-id">
+              <col class="col-ruta">
+              <col class="col-depto">
+              <col class="col-predio">
+              <col class="col-prioridad">
+              <col class="col-actual">
+              <col class="col-global">
+              <col class="col-usuario">
+              <col class="col-acciones">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Hoja de Ruta</th>
+                <th>Depto.</th>
+                <th>Predio</th>
+                <th>Prior.</th>
+                <th>Edo. Actual</th>
+                <th>Edo. Global</th>
+                <th>Usuario</th>
+                <th class="text-center">Ver</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-casos-body"></tbody>
+          </table>
         </div>
 
         <div id="listado-vacio" class="empty-state hidden">No hay casos que coincidan con los filtros aplicados.</div>
@@ -460,6 +461,27 @@
 
         <form id="form-caso">
           <input type="hidden" id="caso-id">
+
+          <!-- CONTROL DEL ESTADO DEL CASO -->
+          <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-3 mb-4">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px] text-[#0f392b]">flag</span>
+              <span>Estado del Caso / Proceso</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label>Estado Global
+                <select data-campo="estado_global" id="form-estado-global">
+                  <option value="PROCESO EN CURSO">PROCESO EN CURSO</option>
+                  <option value="PROCESO CONCLUIDO">PROCESO CONCLUIDO</option>
+                </select>
+              </label>
+              <label>Estado Actual
+                <select data-campo="estado_actual" id="form-estado-actual">
+                  <option value="">Seleccione Estado Actual</option>
+                </select>
+              </label>
+            </div>
+          </div>
 
           <!-- PARTE 1: REGISTRO DEL CASO -->
           <div class="parte-block" id="bloque-parte1">
@@ -511,37 +533,6 @@
                     <option value="ALTA">Alta</option>
                     <option value="MEDIA">Media</option>
                     <option value="BAJA">Baja</option>
-                  </select>
-                </label>
-
-                <label>Estado Global
-                  <select data-campo="estado_global" id="form-estado-global">
-                    <option value="PROCESO EN CURSO">PROCESO EN CURSO</option>
-                    <option value="PROCESO CONCLUIDO">PROCESO CONCLUIDO</option>
-                  </select>
-                </label>
-
-                <label>Estado Actual
-                  <select data-campo="estado_actual" id="form-estado-actual">
-                    <optgroup label="PROCESO EN CURSO">
-                      <option value="CON INSPECCION- PENDIENTE DE EMISION DE MEDIDAS PRECAUTORIAS">CON INSPECCION- PENDIENTE DE EMISION DE MEDIDAS PRECAUTORIAS</option>
-                      <option value="CON MEDIDAS PRECAUTORIAS">CON MEDIDAS PRECAUTORIAS</option>
-                      <option value="CON INTIMACION">CON INTIMACION</option>
-                      <option value="CON CARTA AL COMANDO">CON CARTA AL COMANDO</option>
-                      <option value="POR DEFINIR">POR DEFINIR</option>
-                    </optgroup>
-                    <optgroup label="PROCESO CONCLUIDO">
-                      <option value="DESALOJADO">DESALOJADO</option>
-                      <option value="DENUNCIA DE AVASALLAMIENTO DESESTIMADA">DENUNCIA DE AVASALLAMIENTO DESESTIMADA</option>
-                      <option value="SE PROSEGUIO CON EL TRAMITE DE DOTACION">SE PROSEGUIO CON EL TRAMITE DE DOTACION</option>
-                    </optgroup>
-                    <optgroup label="OTROS">
-                      <option value="REGISTRADO">REGISTRADO</option>
-                      <option value="INSPECCION PENDIENTE">INSPECCION PENDIENTE</option>
-                      <option value="CON INFORME DE INSPECCION">CON INFORME DE INSPECCION</option>
-                      <option value="REVOCADO">REVOCADO</option>
-                      <option value="POR ATENDER">POR ATENDER</option>
-                    </optgroup>
                   </select>
                 </label>
               </div>
@@ -613,7 +604,7 @@
               <div class="sub-panel">
                 <h4>Realización e Informe</h4>
                 <div class="field-grid">
-                  <label>Fecha Real de Inspección <input data-campo="fecha_real_inspeccion" type="date"></label>
+                  <label>Fecha de la Inspección de Campo <input data-campo="fecha_real_inspeccion" type="date"></label>
                   <label class="full">Informe de Inspección <textarea data-campo="informe_inspeccion" id="form-informe-inspeccion"></textarea></label>
                   <label>Fecha del Informe <input data-campo="fecha_informe" type="date" id="form-fecha-informe"></label>
                   <label>Gestión de Inspección (automática) <input id="form-gestion-inspeccion" type="text" disabled></label>
@@ -644,36 +635,75 @@
             </div>
           </div>
 
-          <!-- PARTE 3: MEDIDAS PRECAUTORIAS Y SEGUIMIENTO -->
+          <!-- PARTE 3: MEDIDAS PRECAUTORIAS -->
           <div class="parte-block" id="bloque-parte3">
             <div class="parte-header" data-toggle="parte3-body">
-              <h3>Parte 3 · Medidas Precautorias y Seguimiento</h3>
+              <h3>Parte 3 · Medidas Precautorias</h3>
               <div class="progress-mini"><div class="progress-fill" id="progreso-parte3"></div></div>
               <span class="parte-estado" id="estado-parte3">NO APLICA</span>
             </div>
             <div class="parte-body" id="parte3-body">
               <p class="hint-text" id="parte3-hint">Esta sección se habilita cuando la Acción a Seguir es "Medidas Precautorias".</p>
               <div class="field-grid">
-                <label>Res. Medidas Precautorias <input data-campo="res_medidas_precautorias" type="text"></label>
-                <label>Fecha Resolución <input data-campo="fecha_resolucion_medidas" type="date"></label>
-                <label>Inf. Medidas Precautorias <input data-campo="inf_medidas_precautorias" type="text"></label>
-                <label>Fecha Informe Medidas Precautorias <input data-campo="fecha_informe_medidas" type="date"></label>
-                <label>Nota Remisión Medidas Precautorias <input data-campo="nota_remision_medidas" type="text"></label>
-                <label>Fecha Nota <input data-campo="fecha_nota" type="date"></label>
-                <label>Intimación <input data-campo="intimacion" type="text"></label>
-                <label>Fecha Intimación <input data-campo="fecha_intimacion" type="date"></label>
-                <label>Notificación de Intimación <input data-campo="notificacion_intimacion" type="text"></label>
+                <label>Resolución de Medidas Precautorias <input data-campo="res_medidas_precautorias" type="text"></label>
+                <label>Fecha de Resolución <input data-campo="fecha_resolucion_medidas" type="date"></label>
+                <label>Informe de Medidas Precautorias <input data-campo="inf_medidas_precautorias" type="text"></label>
+                <label>Fecha Informe de Medidas Precautorias <input data-campo="fecha_informe_medidas" type="date"></label>
+              </div>
+            </div>
+          </div>
+
+          <!-- PARTE 4: REMISIÓN DE MEDIDAS PRECAUTORIAS A LA DEPARTAMENTAL -->
+          <div class="parte-block" id="bloque-parte4">
+            <div class="parte-header" data-toggle="parte4-body">
+              <h3>Parte 4 · Remisión de Medidas Precautorias a la Departamental</h3>
+              <div class="progress-mini"><div class="progress-fill" id="progreso-parte4"></div></div>
+              <span class="parte-estado" id="estado-parte4">NO APLICA</span>
+            </div>
+            <div class="parte-body" id="parte4-body">
+              <div class="field-grid">
+                <label>Nota de Remisión <input data-campo="nota_remision_medidas" type="text"></label>
+                <label>Fecha de Nota <input data-campo="fecha_nota" type="date"></label>
+                <label>Hoja de Ruta de Remisión <input data-campo="hr_remision" type="text" placeholder="Ej. HR-12345/2026"></label>
+              </div>
+            </div>
+          </div>
+
+          <!-- PARTE 5: INTIMACIÓN -->
+          <div class="parte-block" id="bloque-parte5">
+            <div class="parte-header" data-toggle="parte5-body">
+              <h3>Parte 5 · Intimación</h3>
+              <div class="progress-mini"><div class="progress-fill" id="progreso-parte5"></div></div>
+              <span class="parte-estado" id="estado-parte5">NO APLICA</span>
+            </div>
+            <div class="parte-body" id="parte5-body">
+              <div class="field-grid">
+                <label>Auto o Acta de Intimación <input data-campo="intimacion" type="text"></label>
+                <label>Fecha de Intimación <input data-campo="fecha_intimacion" type="date"></label>
                 <label>Informe de Verificación de Intimación <input data-campo="informe_verificacion_intimacion" type="text"></label>
-                <label>Fecha Informe de Verificación <input data-campo="fecha_informe_verificacion" type="date"></label>
-                <label class="full">Estado / Conclusión de la Verificación
-                  <textarea data-campo="estado_verificacion" id="form-estado-verificacion" placeholder="Conclusiones o estado de la verificación..."></textarea>
+                <label>Fecha Informe Verificación <input data-campo="fecha_informe_verificacion" type="date"></label>
+                <label class="full">Estado de la Verificación
+                  <textarea data-campo="estado_verificacion" id="form-estado-verificacion" placeholder="Estado o conclusiones de la verificación..."></textarea>
                 </label>
                 <label class="full">Detalle de la Verificación <textarea data-campo="detalle_verificacion"></textarea></label>
+              </div>
+            </div>
+          </div>
+
+          <!-- PARTE 6: DESALOJO CON APOYO DE LA FUERZA PÚBLICA -->
+          <div class="parte-block" id="bloque-parte6">
+            <div class="parte-header" data-toggle="parte6-body">
+              <h3>Parte 6 · Desalojo con Apoyo de la Fuerza Pública</h3>
+              <div class="progress-mini"><div class="progress-fill" id="progreso-parte6"></div></div>
+              <span class="parte-estado" id="estado-parte6">NO APLICA</span>
+            </div>
+            <div class="parte-body" id="parte6-body">
+              <div class="field-grid">
                 <label>Carta al Comando <input data-campo="carta_comando" type="text"></label>
                 <label>Fecha Carta al Comando <input data-campo="fecha_carta_comando" type="date"></label>
                 <label>Informe / Acta de Desalojo <input data-campo="informe_acta_desalojo" type="text"></label>
-                <label>Fecha Desalojo <input data-campo="fecha_desalojo" type="date"></label>
-                <label class="full">Observaciones <textarea data-campo="observaciones_parte3"></textarea></label>
+                <label>Fecha de Desalojo <input data-campo="fecha_desalojo" type="date"></label>
+                <label class="full">Observaciones del Desalojo <textarea data-campo="observaciones_parte3"></textarea></label>
               </div>
             </div>
           </div>
@@ -689,25 +719,38 @@
       </section>
 
       <!-- ===================== DETALLE DE CASO ===================== -->
-      <section id="view-detalle" class="view space-y-5">
-        <div class="flex items-center justify-between pb-2">
-          <div>
-            <h2 class="text-xl font-bold text-slate-900">Detalle del Caso</h2>
-            <p class="text-xs text-slate-500">Expediente completo y trazabilidad de acciones</p>
-          </div>
-          <div class="flex items-center gap-2.5">
-            <button class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer shadow-sm" id="btn-detalle-volver">
+      <section id="view-detalle" class="view space-y-4">
+        <!-- BARRA ADHESIVA: ESTADOS SIEMPRE VISIBLES AL HACER SCROLL -->
+        <div class="detalle-sticky-bar flex flex-wrap items-center justify-between gap-3 shadow-sm" id="detalle-sticky-bar">
+          <div class="flex items-center gap-3">
+            <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer shadow-sm transition-colors" id="btn-detalle-volver">
               <span class="material-symbols-outlined text-[16px]">arrow_back</span>
-              Volver
+              <span>Volver</span>
             </button>
-            <button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-[#0f392b] hover:bg-[#164e3b] cursor-pointer shadow-sm" id="btn-detalle-editar">
-              <span class="material-symbols-outlined text-[16px]">edit</span>
-              Editar Caso
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono font-bold text-[#0f392b] bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md" id="sticky-id-inspec">—</span>
+              <span class="text-xs font-bold text-slate-800 max-w-[260px] truncate" id="sticky-predio">—</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estado Global:</span>
+              <span id="sticky-estado-global"></span>
+            </div>
+            <div class="h-4 w-[1px] bg-slate-200"></div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estado Actual:</span>
+              <span id="sticky-estado-actual"></span>
+            </div>
+            <button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#0f392b] hover:bg-[#164e3b] cursor-pointer shadow-sm transition-colors" id="btn-detalle-editar">
+              <span class="material-symbols-outlined text-[15px]">edit</span>
+              <span>Editar Caso</span>
             </button>
           </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-wrap gap-6 items-center" id="detalle-header"></div>
+        <!-- PRIMER BOX: DATOS GENERALES (ID_INSPEC, PREDIO, UBICACIÓN ÚNICAMENTE) -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm" id="detalle-header"></div>
 
         <div class="tabs">
           <button class="tab-btn active" data-tab="tab-resumen">Resumen</button>
@@ -748,11 +791,20 @@
 
         <div class="table-wrap">
           <table class="data-table" id="tabla-seguimiento">
+            <colgroup>
+              <col class="col-seg-id">
+              <col class="col-seg-predio">
+              <col class="col-seg-depto">
+              <col class="col-seg-estado">
+              <col class="col-seg-acc">
+            </colgroup>
             <thead>
               <tr>
-                <th>ID_INSPEC</th><th>Caso / Predio</th><th>Depto</th><th>Municipio</th>
-                <th>F. Programada</th><th>F. Real</th><th>Técnico</th><th>Estado</th>
-                <th>Informe</th><th>F. Informe</th><th>Días Transcurridos</th><th>Acciones</th>
+                <th>ID_INSPEC</th>
+                <th>Predio</th>
+                <th>Departamento</th>
+                <th>Estado Inspección</th>
+                <th class="text-center">Ver</th>
               </tr>
             </thead>
             <tbody id="tabla-seguimiento-body"></tbody>
